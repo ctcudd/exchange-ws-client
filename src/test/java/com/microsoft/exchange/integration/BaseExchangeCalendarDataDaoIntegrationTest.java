@@ -18,11 +18,15 @@
  */
 package com.microsoft.exchange.integration;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -39,7 +43,6 @@ import org.springframework.dao.support.DataAccessUtils;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import com.ibm.icu.util.Region;
 import com.ibm.icu.util.TimeZone;
 import com.microsoft.exchange.exception.ExchangeCannotDeleteRuntimeException;
 import com.microsoft.exchange.exception.ExchangeRuntimeException;
@@ -50,7 +53,6 @@ import com.microsoft.exchange.types.CalendarItemType;
 import com.microsoft.exchange.types.DisposalType;
 import com.microsoft.exchange.types.FolderIdType;
 import com.microsoft.exchange.types.ItemIdType;
-import com.microsoft.exchange.types.ItemType;
 import com.microsoft.exchange.types.TimeZoneDefinitionType;
 
 

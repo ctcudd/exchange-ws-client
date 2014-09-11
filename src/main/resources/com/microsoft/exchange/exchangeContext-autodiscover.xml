@@ -3,20 +3,9 @@
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
 	xmlns:p="http://www.springframework.org/schema/p"
 	xmlns:c="http://www.springframework.org/schema/c"
-    xmlns:ehcache="http://ehcache-spring-annotations.googlecode.com/svn/schema/ehcache-spring"
 	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
-						http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.0.xsd
-						http://ehcache-spring-annotations.googlecode.com/svn/schema/ehcache-spring
-     					http://ehcache-spring-annotations.googlecode.com/svn/schema/ehcache-spring/ehcache-spring-1.1.xsd">
+						http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.0.xsd">
 	
-<!-- 	<ehcache:annotation-driven  cache-manager="autodiscoverEhCacheManager"  /> -->
-    
-<!--     <bean id="autodiscoverEhCacheManager" class="org.springframework.cache.ehcache.EhCacheManagerFactoryBean"> -->
-<!--     	<property name="cacheManagerName" value="autodiscoverCacheManager"/> -->
-<!--     	<property name="shared" value="false" /> -->
-<!--     	<property name="configLocation" value="classpath:autodiscover-ehcache.xml" /> -->
-<!--     </bean> -->
-
 	<bean id="ewsDestinationProvider" class="com.microsoft.exchange.autodiscover.AutodiscoverDestinationProvider" >
        	<property name="connectingSIDSource">
 			<bean class="com.microsoft.exchange.impl.ThreadLocalImpersonationConnectingSIDSourceImpl"/>
@@ -36,7 +25,7 @@
 		p:marshaller-ref="jaxbMarshaller" />
 	
 	<bean id="poxAutodiscoverService" class="com.microsoft.exchange.autodiscover.PoxAutodiscoverServiceImpl"	
-		p:httpClient-ref="httpClient"/>
+		p:httpClient-ref="ewsHttpClient"/>
 		
 	<bean id="compositeAutodiscoverService" class="com.microsoft.exchange.autodiscover.CompositeAutodiscoverServiceImpl"	 >
 		<property name="autodiscoverServices">
@@ -49,7 +38,7 @@
 	
 		
 	<bean id="messageSender"
-		class="com.microsoft.exchange.impl.http.CustomHttpComponentsMessageSender" p:httpClient-ref="httpClient" >
+		class="com.microsoft.exchange.impl.http.CustomHttpComponentsMessageSender" p:httpClient-ref="ewsHttpClient" >
 		<property name="maxTotalConnections" value="${http.maxTotalConnections:10}" />
 		<property name="defaultMaxPerRouteOverride" value="${http.maxConnectionsPerRoute:10}" />
 		<property name="connectionTimeout" value="${http.connectionTimeout:1200000}" />
@@ -66,15 +55,15 @@
 		<constructor-arg index="1" value="${password}" />
 	</bean>
 	
-	 <bean id="httpClientConnectionManager" class="org.apache.http.impl.conn.PoolingClientConnectionManager" p:maxTotal="200"/>
+	 <bean id="ewsHttpClientConnectionManager" class="org.apache.http.impl.conn.PoolingClientConnectionManager" p:maxTotal="200"/>
 	 
-    <bean id="httpClient" class="org.apache.http.impl.client.DefaultHttpClient"
-          c:conman-ref="httpClientConnectionManager"
+    <bean id="ewsHttpClient" class="org.apache.http.impl.client.DefaultHttpClient"
+          c:conman-ref="ewsHttpClientConnectionManager"
           p:redirectStrategy-ref="autodiscoverRedirectStrategy">
     </bean>
 	 <bean id="removeHttpHeaders" class="com.microsoft.exchange.impl.SoapHttpRequestHeaderInterceptor"/>
     <bean id="registerHttpRequestInterceptor" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean"
-          p:targetObject-ref="httpClient" p:targetMethod="addRequestInterceptor">
+          p:targetObject-ref="ewsHttpClient" p:targetMethod="addRequestInterceptor">
         <property name="arguments">
             <array>
                 <ref bean="removeHttpHeaders"/>

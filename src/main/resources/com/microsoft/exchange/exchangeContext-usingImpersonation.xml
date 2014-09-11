@@ -11,7 +11,7 @@
 	<import resource="exchangeContext-autodiscover.xml"/>
 
 	<bean id="ewsClient" class="com.microsoft.exchange.impl.ExchangeWebServicesClient">
-		
+	
 		<property name="marshaller" ref="jaxbMarshaller" />
 		<property name="unmarshaller" ref="jaxbMarshaller" />
 		<property name="messageFactory">
