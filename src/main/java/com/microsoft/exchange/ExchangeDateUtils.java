@@ -47,8 +47,8 @@ import org.joda.time.Period;
 /**
  * @author Nicholas Blair
  */
-public class DateHelp {
-	protected static final Log log = LogFactory.getLog(DateHelp.class);
+public class ExchangeDateUtils {
+	protected static final Log log = LogFactory.getLog(ExchangeDateUtils.class);
 	public static final Period MAX_PERIOD = Period.days(3660);
 
 	protected static final String DATE_TIME_FORMAT = "yyyyMMdd-HHmm";
