@@ -41,7 +41,7 @@ import org.junit.runner.RunWith;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import com.microsoft.exchange.DateHelp;
+import com.microsoft.exchange.ExchangeDateUtils;
 import com.microsoft.exchange.ExchangeEventConverter;
 import com.microsoft.exchange.impl.ExchangeEventConverterImpl;
 import com.microsoft.exchange.impl.ThreadLocalImpersonationConnectingSIDSourceImpl;
@@ -159,7 +159,7 @@ public class ImpersonationClientIntegrationTest extends AbstractIntegrationTest 
 	@Test
 	public void testGetUserAvailability() {	
 		initializeCredentials();
-		GetUserAvailabilityRequest request = constructAvailabilityRequest(DateHelp.makeDate(startDate), DateHelp.makeDate(endDate), emailAddress);
+		GetUserAvailabilityRequest request = constructAvailabilityRequest(ExchangeDateUtils.makeDate(startDate), ExchangeDateUtils.makeDate(endDate), emailAddress);
 		StopWatch stopWatch = new StopWatch();
 		stopWatch.start();
 		GetUserAvailabilityResponse response = ewsClient.getUserAvailability(request);
@@ -176,7 +176,7 @@ public class ImpersonationClientIntegrationTest extends AbstractIntegrationTest 
 	@Test
 	public void testFindItemCalendarType() throws JAXBException {
 		initializeCredentials();
-		FindItem request = constructFindItemRequest(DateHelp.makeDate(startDate), DateHelp.makeDate(endDate), emailAddress);
+		FindItem request = constructFindItemRequest(ExchangeDateUtils.makeDate(startDate), ExchangeDateUtils.makeDate(endDate), emailAddress);
 		StopWatch stopWatch = new StopWatch();
 		stopWatch.start();
 		FindItemResponse response = ewsClient.findItem(request);
@@ -194,7 +194,7 @@ public class ImpersonationClientIntegrationTest extends AbstractIntegrationTest 
 	@Test
 	public void testFindMoreDetailedItemCalendarType() throws JAXBException {
 		initializeCredentials();
-		FindItem request = constructFindItemRequest(DateHelp.makeDate(startDate), DateHelp.makeDate(endDate), emailAddress);
+		FindItem request = constructFindItemRequest(ExchangeDateUtils.makeDate(startDate), ExchangeDateUtils.makeDate(endDate), emailAddress);
 		StopWatch stopWatch = new StopWatch();
 		stopWatch.start();
 		FindItemResponse response = ewsClient.findItem(request);
@@ -245,7 +245,7 @@ public class ImpersonationClientIntegrationTest extends AbstractIntegrationTest 
 	public void testFindCalendarObject() throws JAXBException {
 		
 		initializeCredentials();
-		FindItem request = constructFindItemRequest(DateHelp.makeDate(startDate), DateHelp.makeDate(endDate), emailAddress);
+		FindItem request = constructFindItemRequest(ExchangeDateUtils.makeDate(startDate), ExchangeDateUtils.makeDate(endDate), emailAddress);
 		StopWatch stopWatch = new StopWatch();
 		stopWatch.start();
 		FindItemResponse response = ewsClient.findItem(request);

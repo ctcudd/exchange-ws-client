@@ -35,7 +35,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import com.microsoft.exchange.DateHelp;
+import com.microsoft.exchange.ExchangeDateUtils;
 import com.microsoft.exchange.impl.ThreadLocalImpersonationConnectingSIDSourceImpl;
 import com.microsoft.exchange.messages.FindItem;
 import com.microsoft.exchange.messages.FindItemResponse;
@@ -94,8 +94,8 @@ public class ImpersonationClientConcurrencyTest extends AbstractIntegrationTest 
 		final CountDownLatch startLatch = new CountDownLatch(threadCount);
 		final CountDownLatch endLatch = new CountDownLatch(threadCount);
 		ExecutorService executor = Executors.newFixedThreadPool(threadCount);
-		final Date start = DateHelp.makeDate(startDate);
-		final Date end = DateHelp.makeDate(endDate);
+		final Date start = ExchangeDateUtils.makeDate(startDate);
+		final Date end = ExchangeDateUtils.makeDate(endDate);
 		final SynchronizedSummaryStatistics stats = new SynchronizedSummaryStatistics();
 		try {
 			for(int i = 0; i < threadCount; i++) {
