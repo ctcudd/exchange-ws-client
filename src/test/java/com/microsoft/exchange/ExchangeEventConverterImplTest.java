@@ -108,7 +108,7 @@ public class ExchangeEventConverterImplTest {
 	@Test
 	public void convertCalendarItemNoEnd(){
 		CalendarItemType calendarItem = new CalendarItemType();
-		calendarItem.setStart(DateHelp.convertDateToXMLGregorianCalendar(new Date()));
+		calendarItem.setStart(ExchangeDateUtils.convertDateToXMLGregorianCalendar(new Date()));
 		Calendar calendar = eventConverter.convertToCalendar(Collections.singleton(calendarItem), null);
 		
 		//calendar should not be null
@@ -128,7 +128,7 @@ public class ExchangeEventConverterImplTest {
 		CalendarItemType calendarItem = new CalendarItemType();
 		String randomSubject = RandomStringUtils.random(32);
 		
-		calendarItem.setStart(DateHelp.convertDateToXMLGregorianCalendar(new Date()));
+		calendarItem.setStart(ExchangeDateUtils.convertDateToXMLGregorianCalendar(new Date()));
 		Duration duration = DatatypeFactory.newInstance().newDuration(1000 * 60 * 60);
 		XMLGregorianCalendar end = calendarItem.getStart();
 		end.add(duration);
@@ -168,7 +168,7 @@ public class ExchangeEventConverterImplTest {
 	public void convertedCalendarMatchesStartTime() throws DatatypeConfigurationException{
 		CalendarItemType calendarItem = new CalendarItemType();		
 		Date dateStartIn = new Date();
-		XMLGregorianCalendar xmlStartIn = DateHelp.convertDateToXMLGregorianCalendar(dateStartIn);
+		XMLGregorianCalendar xmlStartIn = ExchangeDateUtils.convertDateToXMLGregorianCalendar(dateStartIn);
 		calendarItem.setStart(xmlStartIn);
 		
 		Duration duration = DatatypeFactory.newInstance().newDuration(1000 * 60 * 60);
@@ -203,7 +203,7 @@ public class ExchangeEventConverterImplTest {
 		assertNotNull(dtStart);
 		net.fortuna.ical4j.model.Date dateStartOut = dtStart.getDate();
 		assertNotNull(dateStartOut);
-		XMLGregorianCalendar xmlStartOut = DateHelp.convertDateToXMLGregorianCalendar(dateStartOut);
+		XMLGregorianCalendar xmlStartOut = ExchangeDateUtils.convertDateToXMLGregorianCalendar(dateStartOut);
 		
 		log.info("dateStartIn="+dateStartIn);
 		log.info("xmlStartIn="+xmlStartIn);
