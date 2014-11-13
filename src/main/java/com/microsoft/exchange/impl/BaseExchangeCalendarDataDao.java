@@ -47,7 +47,7 @@ import org.springframework.dao.support.DataAccessUtils;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StopWatch.TaskInfo;
 
-import com.microsoft.exchange.DateHelp;
+import com.microsoft.exchange.ExchangeDateUtils;
 import com.microsoft.exchange.ExchangeRequestFactory;
 import com.microsoft.exchange.ExchangeResponseUtils;
 import com.microsoft.exchange.ExchangeWebServices;
@@ -75,8 +75,11 @@ import com.microsoft.exchange.messages.GetServerTimeZones;
 import com.microsoft.exchange.messages.GetServerTimeZonesResponse;
 import com.microsoft.exchange.messages.ResolveNames;
 import com.microsoft.exchange.messages.ResolveNamesResponse;
+import com.microsoft.exchange.types.ArrayOfRecipientsType;
 import com.microsoft.exchange.types.BaseFolderIdType;
 import com.microsoft.exchange.types.BaseFolderType;
+import com.microsoft.exchange.types.BodyType;
+import com.microsoft.exchange.types.BodyTypeType;
 import com.microsoft.exchange.types.CalendarFolderType;
 import com.microsoft.exchange.types.CalendarItemCreateOrDeleteOperationType;
 import com.microsoft.exchange.types.CalendarItemType;
@@ -84,11 +87,14 @@ import com.microsoft.exchange.types.ConnectingSIDType;
 import com.microsoft.exchange.types.DefaultShapeNamesType;
 import com.microsoft.exchange.types.DisposalType;
 import com.microsoft.exchange.types.DistinguishedFolderIdNameType;
+import com.microsoft.exchange.types.EmailAddressType;
 import com.microsoft.exchange.types.ExtendedPropertyType;
 import com.microsoft.exchange.types.FolderIdType;
 import com.microsoft.exchange.types.FolderQueryTraversalType;
 import com.microsoft.exchange.types.ItemIdType;
 import com.microsoft.exchange.types.ItemType;
+import com.microsoft.exchange.types.MessageType;
+import com.microsoft.exchange.types.SingleRecipientType;
 import com.microsoft.exchange.types.TaskType;
 import com.microsoft.exchange.types.TasksFolderType;
 import com.microsoft.exchange.types.TimeZoneDefinitionType;
@@ -117,7 +123,18 @@ public class BaseExchangeCalendarDataDao {
 	private int maxRetries = 10;
 	
 	@Value("${username}")
-	private String adminUsername;
+	private String adminUpn;
+	
+	@Value("${admin.sendas}")
+	private String adminSendAs;
+	
+	public String getAdminSendAs(){
+		return this.adminSendAs;
+	}
+	
+	public String getAdminUpn(){
+		return this.adminUpn;
+	}
 	
 	public int getMaxRetries() {
 		return maxRetries;
@@ -210,7 +227,7 @@ public class BaseExchangeCalendarDataDao {
 	
 	protected BaseFolderType getPrimaryFolder(String upn, DistinguishedFolderIdNameType parent) {
 		setContextCredentials(upn);
-		GetFolder getFolderRequest = getRequestFactory().constructGetFolderByName(parent);
+		GetFolder getFolderRequest = getRequestFactory().constructGetFolderByDistinguishedName(parent);
 		GetFolderResponse getFolderResponse = getWebServices().getFolder(getFolderRequest);
 		Set<BaseFolderType> response = getResponseUtils().parseGetFolderResponse(getFolderResponse);
 		return DataAccessUtils.singleResult(response);
@@ -345,7 +362,7 @@ public class BaseExchangeCalendarDataDao {
 			throw new ExchangeRuntimeException("findCalendarItemIdsInternal(upn="+upn+",startDate="+startDate+",+endDate="+endDate+",...) failed "+getMaxRetries()+ " consecutive attempts.");
 		}else {
 			setContextCredentials(upn);
-			FindItem request = getRequestFactory().constructFindCalendarItemIdsByDateRange(startDate, endDate, calendarIds);
+			FindItem request = getRequestFactory().constructCalendarViewFindCalendarItemIdsByDateRange(startDate, endDate, calendarIds);
 			try {
 				FindItemResponse response = getWebServices().findItem(request);
 				return getResponseUtils().parseFindItemIdResponseNoOffset(response);
@@ -363,7 +380,7 @@ public class BaseExchangeCalendarDataDao {
 			}catch(ExchangeExceededFindCountLimitRuntimeException e1) {
 				log.warn("findCalendarItemIdsInternal(upn="+upn+",startDate="+startDate+",+endDate="+endDate+",...) ExceededFindCountLimit splitting request and trying again. - failure #"+newDepth);
 				Set<ItemIdType> foundItems = new HashSet<ItemIdType>();
-				List<Interval> intervals = DateHelp.generateIntervals(startDate, endDate);
+				List<Interval> intervals = ExchangeDateUtils.generateIntervals(startDate, endDate);
 				for(Interval i: intervals) {
 					foundItems.addAll(findCalendarItemIdsInternal(upn,i.getStart().toDate(), i.getEnd().toDate(),calendarIds,newDepth));
 				}
@@ -595,11 +612,10 @@ public class BaseExchangeCalendarDataDao {
 	
 	public Set<String> resolveEmailAddresses(String alias) {
 		Validate.isTrue(StringUtils.isNotBlank(alias), "alias argument cannot be blank");
-		setContextCredentials(adminUsername);
+		setContextCredentials(getAdminUpn());
 		ResolveNames request = getRequestFactory().constructResolveNames(alias);
 		ResolveNamesResponse response = getWebServices().resolveNames(request);
 		return getResponseUtils().parseResolveNamesResponse(response);
-		
 	}
 	
 	public String resolveUpn(String emailAddress) {
@@ -619,7 +635,7 @@ public class BaseExchangeCalendarDataDao {
 					results.add(addr);
 				}
 			}catch(Exception e) {
-				log.warn("resolveUpn -- "+addr+" NOT VALID. "+e.getMessage());
+				log.debug("resolveUpn -- "+addr+" NOT VALID. "+e.getMessage());
 			}
 		}
 		if(CollectionUtils.isEmpty(results)) {
@@ -636,10 +652,16 @@ public class BaseExchangeCalendarDataDao {
 	
 	public List<TimeZoneDefinitionType> getServerTimeZones(String tzid, boolean fullTimeZoneData){
 		GetServerTimeZones request = getRequestFactory().constructGetServerTimeZones(tzid, fullTimeZoneData);
-		setContextCredentials(adminUsername);
+		setContextCredentials(getAdminUpn());
 		GetServerTimeZonesResponse response = getWebServices().getServerTimeZones(request);
 		return getResponseUtils().parseGetServerTimeZonesResponse(response);
 	}
+	
+	public boolean isEmpty(String upn, FolderIdType folderId){
+		Set<ItemIdType> itemIds = findindFirstItemIdSet(upn, Collections.singleton(folderId));
+		return CollectionUtils.isEmpty(itemIds);
+	}
+	
 	/**
 	 * The EmptyFolder operation empties folders in a mailbox. 
 	 * Optionally, this operation enables you to delete the subfolders of the specified folder. 
@@ -673,8 +695,8 @@ public class BaseExchangeCalendarDataDao {
 		Set<ItemIdType> itemIds = findindFirstItemIdSet(upn, Collections.singleton(folderId));
 		while(!itemIds.isEmpty()){
 			List<ItemIdType> itemIdList = new ArrayList<ItemIdType>(itemIds);
-			if(itemIdList.size() > 500){
-				itemIdList = itemIdList.subList(0, 500);
+			if(itemIdList.size() > 250){
+				itemIdList = itemIdList.subList(0, 250);
 			}
 			StopWatch stopWatch = new StopWatch();
 			stopWatch.start();
@@ -695,6 +717,23 @@ public class BaseExchangeCalendarDataDao {
 		return false;
 	}
 	
+	/**
+	 * First check the calendar for existing items, if the calendar folder is empty then delete it.
+	 * @param upn
+	 * @param folderId
+	 * @return - True if the calender folder was deleted, false otherwise
+	 */
+	public boolean deleteEmptyCalendarFolder(String upn, FolderIdType folderId){
+		return isEmpty(upn, folderId) ? deleteFolder(upn, DisposalType.SOFT_DELETE, folderId) : false;
+	}
+	
+	/**
+	 * Delete a calendar folder
+	 * @param upn - the user 
+	 * @param disposalType - how the deletion is performed
+	 * @param folderId - the folder to delete
+	 * @return
+	 */
 	public boolean deleteFolder(String upn, DisposalType disposalType, BaseFolderIdType folderId){
 		DeleteFolder request = getRequestFactory().constructDeleteFolder(folderId, disposalType);
 		setContextCredentials(upn);
@@ -702,4 +741,62 @@ public class BaseExchangeCalendarDataDao {
 		return getResponseUtils().parseDeleteFolderResponse(response);
 				
 	}
+	
+	public ItemIdType createEmailMessage(List<String> recips, String replyTo, String subject, String messageBody, BodyTypeType bodyType, FolderIdType folderIdType){
+		List<MessageType> messages = new ArrayList<MessageType>();
+		MessageType messageType = new MessageType();
+		
+		//set one or more recipients to receive the message
+		ArrayOfRecipientsType arrayOfRecips =new ArrayOfRecipientsType();
+		for(String r: recips) {
+			EmailAddressType emailAddressType =new EmailAddressType();
+			emailAddressType.setEmailAddress(r);
+			arrayOfRecips.getMailboxes().add(emailAddressType);
+		}
+		messageType.setToRecipients(arrayOfRecips);
+		
+		//set the replyTo address
+		if(StringUtils.isNotBlank(replyTo)) {
+			ArrayOfRecipientsType arrayOfReplyTos =new ArrayOfRecipientsType();
+			SingleRecipientType fromType = new SingleRecipientType();
+			EmailAddressType fromAddressType = new EmailAddressType();
+			fromAddressType.setEmailAddress(replyTo);
+			fromType.setMailbox(fromAddressType);
+			arrayOfReplyTos.getMailboxes().add(fromAddressType);
+			messageType.setReplyTo(arrayOfReplyTos);
+		}
+		
+		//set the from address
+		String from = getAdminSendAs();
+		if(StringUtils.isNotBlank(from)){
+			SingleRecipientType fromType = new SingleRecipientType();
+			EmailAddressType fromAddressType = new EmailAddressType();
+			fromAddressType.setEmailAddress(from);
+			fromType.setMailbox(fromAddressType);
+			messageType.setFrom(fromType);
+		}
+		//set the message body
+		BodyType body = new BodyType();
+		body.setBodyType(bodyType);
+		body.setValue(messageBody);
+		messageType.setBody(body);
+		//set the subjec
+		messageType.setSubject(subject);
+		//message set as not read
+		messageType.setIsRead(false);
+		//add the message
+		messages.add(messageType);
+		
+		//in this context we are impersonating an admin with send as rights for admin.sendas
+		setContextCredentials(getAdminUpn());
+		CreateItem request = getRequestFactory().constructCreateMessageItem(messages, folderIdType);
+		CreateItemResponse response = getWebServices().createItem(request);
+		ItemIdType itemId = null;
+		List<ItemIdType> items = getResponseUtils().parseCreateItemResponse(response);
+		if(!CollectionUtils.isEmpty(items) && null != items.get(0)) {
+			itemId=items.get(0);
+		}
+		return itemId;
+	}
+	
 }
