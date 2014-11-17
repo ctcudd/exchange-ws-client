@@ -54,6 +54,7 @@ import com.microsoft.exchange.ExchangeWebServices;
 import com.microsoft.exchange.exception.ExchangeExceededFindCountLimitRuntimeException;
 import com.microsoft.exchange.exception.ExchangeInvalidUPNRuntimeException;
 import com.microsoft.exchange.exception.ExchangeRuntimeException;
+import com.microsoft.exchange.exception.ExchangeWebServicesRuntimeException;
 import com.microsoft.exchange.messages.CreateFolder;
 import com.microsoft.exchange.messages.CreateFolderResponse;
 import com.microsoft.exchange.messages.CreateItem;
@@ -110,6 +111,9 @@ import com.microsoft.exchange.messages.EmptyFolder;
  */
 public class BaseExchangeCalendarDataDao {
 
+    //================================================================================
+    // Properties 
+    //================================================================================
 	protected final Log log = LogFactory.getLog(this.getClass());
 	
 	private JAXBContext jaxbContext;
@@ -128,6 +132,9 @@ public class BaseExchangeCalendarDataDao {
 	@Value("${admin.sendas}")
 	private String adminSendAs;
 	
+    //================================================================================
+    // Getters/Setters 
+    //================================================================================
 	public String getAdminSendAs(){
 		return this.adminSendAs;
 	}
@@ -385,7 +392,7 @@ public class BaseExchangeCalendarDataDao {
 					foundItems.addAll(findCalendarItemIdsInternal(upn,i.getStart().toDate(), i.getEnd().toDate(),calendarIds,newDepth));
 				}
 				return foundItems;
-			}catch(Exception e2) {
+			}catch(ExchangeWebServicesRuntimeException e2) {
 				long backoff = getWaitTimeExp(newDepth);
 				log.warn("findCalendarItemIdsInternal(upn="+upn+",startDate="+startDate+",+endDate="+endDate+",...) - failure #"+newDepth+". Sleeping for "+backoff+" before retry. " +e2.getMessage());
 				try {
@@ -458,7 +465,7 @@ public class BaseExchangeCalendarDataDao {
 //					foundItems.addAll(findCalendarItemIdsInternal(upn,i.getStart().toDate(), i.getEnd().toDate(),calendarIds,newDepth));
 //				}
 //				return foundItems;
-			}catch(Exception e2) {
+			}catch(ExchangeWebServicesRuntimeException e2) {
 				long backoff = getWaitTimeExp(newDepth);
 				log.warn("findCalendarItemIdsInternal(upn="+upn+",request="+request+",...) - failure #"+newDepth+". Sleeping for "+backoff+" before retry. " +e2.getMessage());
 				try {
@@ -472,12 +479,12 @@ public class BaseExchangeCalendarDataDao {
 		
 	}
 	
-	public Set<CalendarItemType> getCalendarItems(String upn, Date startDate, Date endDate, Collection<FolderIdType> calendarFolderId){
+	public Collection<CalendarItemType> getCalendarItems(String upn, Date startDate, Date endDate, Collection<FolderIdType> calendarFolderId){
 		Set<ItemIdType> itemIds = findCalendarItemIds(upn, startDate, endDate, calendarFolderId);
 		return getCalendarItems(upn, itemIds);
 	}
 	
-	public Set<CalendarItemType> getCalendarItems(String upn, Set<ItemIdType> itemIds) {
+	public Collection<CalendarItemType> getCalendarItems(String upn, Collection<ItemIdType> itemIds) {
 		Set<CalendarItemType> calendarItems = new HashSet<CalendarItemType>();
 		Set<ItemType> items = getItemsInternal(upn, itemIds, 0);
 		for(ItemType item : items){
@@ -488,6 +495,11 @@ public class BaseExchangeCalendarDataDao {
 			}
 		}
 		return calendarItems;
+	}
+	
+	public CalendarItemType getCalendarItem(String upn, ItemIdType itemId) {
+		Collection<CalendarItemType> items = getCalendarItems(upn, Collections.singleton(itemId));
+		return DataAccessUtils.singleResult(items);
 	}
 	
 	public Set<TaskType> getTaskItems(String upn, Set<ItemIdType> itemIds) {
@@ -503,7 +515,7 @@ public class BaseExchangeCalendarDataDao {
 		return taskItems;
 	}
 	
-	private Set<ItemType> getItemsInternal(String upn, Set<ItemIdType> itemIds, int depth){
+	private Set<ItemType> getItemsInternal(String upn, Collection<ItemIdType> itemIds, int depth){
 		Validate.isTrue(StringUtils.isNotBlank(upn), "upn argument cannot be blank");
 		Validate.notEmpty(itemIds, "itemids argument cannot be empty");
 		
@@ -518,7 +530,7 @@ public class BaseExchangeCalendarDataDao {
 			try {
 				GetItemResponse response = getWebServices().getItem(request);
 				return getResponseUtils().parseGetItemResponse(response);
-			}catch(Exception e) {
+			}catch(ExchangeWebServicesRuntimeException e) {
 				long backoff = getWaitTimeExp(newDepth);
 				log.warn("getItemsInternal - failure #"+newDepth+". Sleeping for "+backoff+" before retry. " +e.getMessage());
 				try {
@@ -549,7 +561,7 @@ public class BaseExchangeCalendarDataDao {
 				CreateItemResponse response = getWebServices().createItem(request);
 				List<ItemIdType> createdCalendarItems = getResponseUtils().parseCreateItemResponse(response);
 				return DataAccessUtils.singleResult(createdCalendarItems);
-			}catch(Exception e) {
+			}catch(ExchangeWebServicesRuntimeException e) {
 				long backoff = getWaitTimeExp(newDepth);
 				log.warn("createCalendarItemInternal - failure #"+newDepth+". Sleeping for "+backoff+" before retry. " +e.getMessage());
 				try {
@@ -593,7 +605,7 @@ public class BaseExchangeCalendarDataDao {
 				boolean success = getResponseUtils().confirmSuccess(response);
 				return success;
 			
-			}catch(Exception e) {
+			}catch(ExchangeWebServicesRuntimeException e) {
 				long backoff = getWaitTimeExp(newDepth);
 				log.warn("deleteCalendarItemsInternal - failure #"+newDepth+". Sleeping for "+backoff+" before retry. " +e.getMessage());
 				try {
@@ -634,7 +646,7 @@ public class BaseExchangeCalendarDataDao {
 				}else {
 					results.add(addr);
 				}
-			}catch(Exception e) {
+			}catch(RuntimeException e) {
 				log.debug("resolveUpn -- "+addr+" NOT VALID. "+e.getMessage());
 			}
 		}
