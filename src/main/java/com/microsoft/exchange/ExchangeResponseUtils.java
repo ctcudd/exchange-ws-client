@@ -36,6 +36,7 @@ import com.microsoft.exchange.messages.GetServerTimeZonesResponse;
 import com.microsoft.exchange.messages.ResolveNamesResponse;
 import com.microsoft.exchange.messages.ResponseCodeType;
 import com.microsoft.exchange.messages.UpdateFolderResponse;
+import com.microsoft.exchange.messages.UpdateItemResponse;
 import com.microsoft.exchange.types.BaseFolderType;
 import com.microsoft.exchange.types.FolderIdType;
 import com.microsoft.exchange.types.ItemIdType;
@@ -93,5 +94,11 @@ public interface ExchangeResponseUtils {
 			GetServerTimeZonesResponse response);
 
 	public boolean parseDeleteFolderResponse(DeleteFolderResponse response);
+
+	/**
+	 * @param response
+	 * @return
+	 */
+	Set<ItemIdType> parseUpdateItemResponse(UpdateItemResponse response);
 
 }

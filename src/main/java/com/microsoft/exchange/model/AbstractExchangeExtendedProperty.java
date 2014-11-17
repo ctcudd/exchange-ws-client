@@ -37,7 +37,7 @@ public abstract class AbstractExchangeExtendedProperty<V> implements ExchangeExt
 	 * @param item
 	 * @return the matching {@link ExtendedPropertyType} if found, otherwise <code>null</code>.
 	 */
-	protected ExtendedPropertyType extractExtendedPropertyType(ItemType item){
+	public ExtendedPropertyType extractExtendedPropertyType(ItemType item){
 		ExtendedPropertyType prop = null;
 		if(null != item){
 			List<ExtendedPropertyType> extendedProperties = item.getExtendedProperties();

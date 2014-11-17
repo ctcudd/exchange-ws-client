@@ -25,6 +25,8 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -33,6 +35,7 @@ import java.util.Set;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -49,6 +52,8 @@ import com.microsoft.exchange.exception.ExchangeRuntimeException;
 import com.microsoft.exchange.impl.BaseExchangeCalendarDataDao;
 import com.microsoft.exchange.messages.GetServerTimeZones;
 import com.microsoft.exchange.types.BaseFolderType;
+import com.microsoft.exchange.types.BodyType;
+import com.microsoft.exchange.types.BodyTypeType;
 import com.microsoft.exchange.types.CalendarItemType;
 import com.microsoft.exchange.types.DisposalType;
 import com.microsoft.exchange.types.FolderIdType;
@@ -64,10 +69,15 @@ public class BaseExchangeCalendarDataDaoIntegrationTest {
 	String username = "someusername";
 	
 	@Value("${integration.email:someemailaddress@on.yourexchangeserver.edu}")
-	String upn;
+	protected String upn;
 	
 	@Autowired
-	BaseExchangeCalendarDataDao exchangeCalendarDataDao;
+	protected BaseExchangeCalendarDataDao exchangeCalendarDataDao;
+	
+	@Before
+	public void setup(){
+		//upn = "blspycha@wisc.edu";
+	}
 
 	@Rule
 	public ExpectedException exception = ExpectedException.none();
@@ -160,6 +170,44 @@ public class BaseExchangeCalendarDataDaoIntegrationTest {
 			log.info("deleting taskFolder '"+taskFolderName+"' ");
 			boolean deleteTaskFolderSuccess = exchangeCalendarDataDao.deleteFolder(upn, DisposalType.SOFT_DELETE, taskFolderId);
 			assertTrue(deleteTaskFolderSuccess);
+		}
+	}
+	
+	@Test
+	public void deleteCalendarFolders(){
+		Map<String, String> calFolders = exchangeCalendarDataDao.getCalendarFolderMap(upn);
+		for(String calId :  calFolders.keySet()){
+			String calName = calFolders.get(calId);
+
+			if(calName.startsWith("blspycha@wisc.edu")){
+				FolderIdType calFolderId= new FolderIdType();
+				calFolderId.setId(calId);
+				
+				log.info("deleting calendarFolder named: '"+calName+"' ");
+				boolean deleteCalendarFolderSuccess = exchangeCalendarDataDao.deleteCalendarFolder(upn, calFolderId);
+				assertTrue(deleteCalendarFolderSuccess);
+			}
+		}
+	}
+	
+	@Test
+	public void purgeEmptyCalendarFolders(){
+		Map<String, String> calFolders = exchangeCalendarDataDao.getCalendarFolderMap(upn);
+		for(String calId :  calFolders.keySet()){
+			String calName = calFolders.get(calId);
+
+			if(calName.startsWith("blspycha@wisc.edu")){
+				FolderIdType calFolderId= new FolderIdType();
+				calFolderId.setId(calId);
+				
+				log.info("checking calendarFolder named: '"+calName+"' ");
+				boolean deleteCalendarFolderSuccess = exchangeCalendarDataDao.deleteEmptyCalendarFolder(upn, calFolderId);
+				if(deleteCalendarFolderSuccess){
+					log.info(" '"+calName+"' was deleted");
+				}else{
+					log.info(" '"+calName+"' was NOT deleted");
+				}
+			}
 		}
 	}
 	
@@ -259,12 +307,20 @@ public class BaseExchangeCalendarDataDaoIntegrationTest {
 	
 
 	@Test
+	public void getCalendarItemById(){
+		String itemIdString = "AAMkADIxZTFmMjM1LTBmYjEtNDg0MS1iNTQ0LWU3OTI1ZWZhZDlkOABGAAAAAACN05QVBWdrSarKY7LX12MEBwDaH0wtNHE9T69RMmiPkcoJAAAAAAEOAADaH0wtNHE9T69RMmiPkcoJAAC4vbyDAAA=";
+		ItemIdType itemId = new ItemIdType();
+		itemId.setId(itemIdString);
+		Collection<CalendarItemType> calendarItems = exchangeCalendarDataDao.getCalendarItems(upn, Collections.singleton(itemId));
+	}
+	
+	@Test
 	public void createGetDeleteEmptyCalendarItem(){
 		
 		CalendarItemType calendarItem = new CalendarItemType();
 		ItemIdType calendarItemId = exchangeCalendarDataDao.createCalendarItem(upn, calendarItem);
 		assertNotNull(calendarItemId);
-		Set<CalendarItemType> createdCalendarItems = exchangeCalendarDataDao.getCalendarItems(upn, Collections.singleton(calendarItemId));
+		Collection<CalendarItemType> createdCalendarItems = exchangeCalendarDataDao.getCalendarItems(upn, Collections.singleton(calendarItemId));
 		CalendarItemType createdCalendarItem = DataAccessUtils.singleResult(createdCalendarItems);
 		assertNotNull(createdCalendarItem);
 		assertNotNull(createdCalendarItem.getStart());
@@ -272,5 +328,18 @@ public class BaseExchangeCalendarDataDaoIntegrationTest {
 		boolean deleteSuccess = exchangeCalendarDataDao.deleteCalendarItems(upn, Collections.singleton(calendarItemId));
 		assertTrue(deleteSuccess);
 		
+	}
+	
+	@Test
+	public void sendEmail(){
+		List<String> recips = new ArrayList<String>();
+		recips.add(upn);
+		
+		String replyTo = upn;
+		String subject ="this is subject";
+		String messageBody = ";this is body;";
+		BodyTypeType bodyType = BodyTypeType.TEXT;
+		FolderIdType folderIdType = null;
+ 		ItemIdType emailItemId = exchangeCalendarDataDao.createEmailMessage(recips, replyTo, subject, messageBody, bodyType, folderIdType);
 	}
 }

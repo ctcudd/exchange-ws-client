@@ -5,6 +5,7 @@ package com.microsoft.exchange.integration;
 
 import static org.junit.Assert.*;
 
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -14,12 +15,16 @@ import org.apache.commons.lang.StringUtils;
 import org.junit.Test;
 import org.springframework.dao.support.DataAccessUtils;
 
+import com.microsoft.exchange.messages.UpdateItem;
+import com.microsoft.exchange.messages.UpdateItemResponse;
 import com.microsoft.exchange.types.CalendarItemType;
 import com.microsoft.exchange.types.ExtendedPropertyType;
 import com.microsoft.exchange.types.ItemIdType;
 import com.microsoft.exchange.types.MapiPropertyTypeType;
+import com.microsoft.exchange.types.NonEmptyArrayOfItemChangesType;
 import com.microsoft.exchange.types.NonEmptyArrayOfPropertyValuesType;
 import com.microsoft.exchange.types.PathToExtendedFieldType;
+import com.microsoft.exchange.types.SetItemFieldType;
 
 import edu.emory.mathcs.backport.java.util.Collections;
 
@@ -77,7 +82,7 @@ public class ExtendedPropertyIntegrationTest extends BaseExchangeCalendarDataDao
 		
 		//retrieve the newly creatd item
 		Set<ItemIdType> expectedItemId = Collections.singleton(createdItemId);
-		Set<CalendarItemType> calendarItems = exchangeCalendarDataDao.getCalendarItems(upn, expectedItemId);
+		Collection<CalendarItemType> calendarItems = exchangeCalendarDataDao.getCalendarItems(upn, expectedItemId);
 		
 		//ensures a singular non null result
 		assertNotNull(calendarItems);
@@ -138,7 +143,7 @@ public class ExtendedPropertyIntegrationTest extends BaseExchangeCalendarDataDao
 		
 		//retrieve the newly creatd item
 		Set<ItemIdType> expectedItemId = Collections.singleton(createdItemId);
-		Set<CalendarItemType> calendarItems = exchangeCalendarDataDao.getCalendarItems(upn, expectedItemId);
+		Collection<CalendarItemType> calendarItems = exchangeCalendarDataDao.getCalendarItems(upn, expectedItemId);
 		
 		//ensures a singular non null result
 		assertNotNull(calendarItems);
@@ -214,7 +219,7 @@ public class ExtendedPropertyIntegrationTest extends BaseExchangeCalendarDataDao
 		
 		//retrieve the newly creatd item
 		Set<ItemIdType> expectedItemId = Collections.singleton(createdItemId);
-		Set<CalendarItemType> calendarItems = exchangeCalendarDataDao.getCalendarItems(upn, expectedItemId);
+		Collection<CalendarItemType> calendarItems = exchangeCalendarDataDao.getCalendarItems(upn, expectedItemId);
 		
 		//ensures a singular non null result
 		assertNotNull(calendarItems);
@@ -255,6 +260,10 @@ public class ExtendedPropertyIntegrationTest extends BaseExchangeCalendarDataDao
 		visitor2Emails.add("hamdrew@wisc.edu");
 		visitor2Emails.add("hamathoy.drew@wisc.edu");
 		
+		Set<String> visitor3Emails = new HashSet<String>();
+		visitor3Emails.add("billcosby@jello.com");
+		visitor3Emails.add("bill@thecosbyshow.com");
+		
 		//construct a semi colon seperated list of strings for all visitor addresses
 		Set<String> visitors = new HashSet<String>();
 		visitors.add(StringUtils.join(visitor1Emails, ";"));
@@ -275,7 +284,7 @@ public class ExtendedPropertyIntegrationTest extends BaseExchangeCalendarDataDao
 		
 		//retrieve the newly creatd item
 		Set<ItemIdType> expectedItemId = Collections.singleton(createdItemId);
-		Set<CalendarItemType> calendarItems = exchangeCalendarDataDao.getCalendarItems(upn, expectedItemId);
+		Collection<CalendarItemType> calendarItems = exchangeCalendarDataDao.getCalendarItems(upn, expectedItemId);
 		
 		//ensures a singular non null result
 		assertNotNull(calendarItems);
@@ -296,6 +305,142 @@ public class ExtendedPropertyIntegrationTest extends BaseExchangeCalendarDataDao
 		
 		NonEmptyArrayOfPropertyValuesType retrievedValuesArray = retrievedProperty.getValues();
 		List<String> retrievedValues = retrievedValuesArray.getValues();
+		for(String s : retrievedValues){
+			assertTrue(visitors.contains(s));
+		}
+		
+		
+		
+		//cleanup
+		boolean deleteSuccess = exchangeCalendarDataDao.deleteCalendarItems(upn, expectedItemId);
+		assertTrue(deleteSuccess);
+	}
+
+	@Test
+	public void createAndUpdateAndGetItemWith2DimensionalStringArrayAsExtendedProperty(){
+		PathToExtendedFieldType extendedFieldType = getExtendedFieldType("2DArray", MapiPropertyTypeType.STRING_ARRAY);
+
+		exchangeCalendarDataDao.getRequestFactory().setItemExtendedPropertyPaths(java.util.Collections.singleton(extendedFieldType));
+
+		//populate collection with addresses for 1st visitor
+		Set<String> visitor1Emails = new HashSet<String>();
+		visitor1Emails.add("ctcudd@wisc.edu");
+		visitor1Emails.add("collin.cudd@wisc.edu");
+		visitor1Emails.add("someaddress@me.com");
+		
+		//populate collection with addresses for 2nd visitor
+		Set<String> visitor2Emails = new HashSet<String>();
+		visitor2Emails.add("hamdrew@wisc.edu");
+		visitor2Emails.add("hamathoy.drew@wisc.edu");
+		
+		Set<String> visitor3Emails = new HashSet<String>();
+		visitor3Emails.add("billcosby@jello.com");
+		visitor3Emails.add("bill@thecosbyshow.com");
+		
+		//construct a semi colon seperated list of strings for all visitor addresses
+		Set<String> visitors = new HashSet<String>();
+		visitors.add(StringUtils.join(visitor1Emails, ";"));
+		visitors.add(StringUtils.join(visitor2Emails, ";"));
+		
+		//create the calendar item
+		CalendarItemType c = new CalendarItemType();
+		ExtendedPropertyType visitorsProperty = new ExtendedPropertyType();
+		NonEmptyArrayOfPropertyValuesType values = new NonEmptyArrayOfPropertyValuesType();
+		values.getValues().addAll(visitors);
+		visitorsProperty.setValues(values);
+		visitorsProperty.setExtendedFieldURI(extendedFieldType);
+		c.getExtendedProperties().add(visitorsProperty);
+		
+		//create the item on the exchange server
+		ItemIdType createdItemId = exchangeCalendarDataDao.createCalendarItem(upn, c);
+		assertNotNull(createdItemId);
+		
+		//retrieve the newly creatd item
+		Set<ItemIdType> expectedItemId = Collections.singleton(createdItemId);
+		Collection<CalendarItemType> calendarItems = exchangeCalendarDataDao.getCalendarItems(upn, expectedItemId);
+		
+		//ensures a singular non null result
+		assertNotNull(calendarItems);
+		assertEquals(1, calendarItems.size());
+		CalendarItemType createdItem = DataAccessUtils.singleResult(calendarItems);
+		
+		//make sure the ids match
+		assertEquals(createdItemId, createdItem.getItemId());
+		
+		//make sure the extended property is returned
+		List<ExtendedPropertyType> extendedProperties = createdItem.getExtendedProperties();
+		assertNotNull(extendedProperties);
+		assertEquals(1, extendedProperties.size());
+		
+		//ensure both properties were retrieved
+		ExtendedPropertyType retrievedProperty = DataAccessUtils.singleResult(extendedProperties);
+		assertEquals(visitorsProperty, retrievedProperty);
+		
+		NonEmptyArrayOfPropertyValuesType retrievedValuesArray = retrievedProperty.getValues();
+		List<String> retrievedValues = retrievedValuesArray.getValues();
+		for(String s : retrievedValues){
+			assertTrue(visitors.contains(s));
+		}
+		
+		//now prepare to update the item
+		//add subject
+		String newSubject = "newSubject";
+		createdItem.setSubject(newSubject);
+		
+		//remove old extended property?
+		//createdItem.getExtendedProperties().remove(visitorsProperty);
+		
+		//construct new extended property
+		visitorsProperty = new ExtendedPropertyType();
+		//update values
+		visitors.add(StringUtils.join(visitor3Emails,";"));
+		values = new NonEmptyArrayOfPropertyValuesType();
+		values.getValues().addAll(visitors);
+		visitorsProperty.setValues(values);
+		visitorsProperty.setExtendedFieldURI(extendedFieldType);
+
+		//create setVisitors object
+		SetItemFieldType setVisitorsProperty = exchangeCalendarDataDao.getRequestFactory().constructSetCalendarItemExtendedProperty(createdItem,visitorsProperty);
+		
+		//create setSubject field
+		SetItemFieldType setSubject = exchangeCalendarDataDao.getRequestFactory().constructSetCalendarItemSubject(createdItem);
+		
+		//construct collection for changes
+		Collection<SetItemFieldType> changeFields = new HashSet<SetItemFieldType>();
+		changeFields.add(setSubject);
+		changeFields.add(setVisitorsProperty);
+		NonEmptyArrayOfItemChangesType changes = exchangeCalendarDataDao.getRequestFactory().constructUpdateCalendarItemChanges(createdItem,changeFields);
+		
+		UpdateItem request = exchangeCalendarDataDao.getRequestFactory().constructUpdateCalendarItem(createdItem, changes);
+		UpdateItemResponse response = exchangeCalendarDataDao.getWebServices().updateItem(request);
+		Set<ItemIdType> updatedItemIds = exchangeCalendarDataDao.getResponseUtils().parseUpdateItemResponse(response);
+		ItemIdType updatedItemId = DataAccessUtils.singleResult(updatedItemIds);
+		
+		//retrieve the newly updated item
+		calendarItems = exchangeCalendarDataDao.getCalendarItems(upn, Collections.singleton(updatedItemId));
+				
+		//ensures a singular non null result
+		assertNotNull(calendarItems);
+		assertEquals(1, calendarItems.size());
+		CalendarItemType updatedItem = DataAccessUtils.singleResult(calendarItems);
+			
+		//make sure the ids match
+		assertEquals(updatedItemId, updatedItem.getItemId());
+		
+		//make sure the subject has been updated
+		assertEquals(newSubject, updatedItem.getSubject());
+		
+		//make sure the extended property is returned
+		extendedProperties = updatedItem.getExtendedProperties();
+		assertNotNull(extendedProperties);
+		assertEquals(1, extendedProperties.size());
+		
+		//ensure both properties were retrieved
+		retrievedProperty = DataAccessUtils.singleResult(extendedProperties);
+		assertEquals(visitorsProperty, retrievedProperty);
+		
+		retrievedValuesArray = retrievedProperty.getValues();
+		retrievedValues = retrievedValuesArray.getValues();
 		for(String s : retrievedValues){
 			assertTrue(visitors.contains(s));
 		}

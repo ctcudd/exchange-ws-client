@@ -66,6 +66,7 @@ import com.microsoft.exchange.messages.ResponseMessageType;
 import com.microsoft.exchange.messages.ResponseMessageType.MessageXml;
 import com.microsoft.exchange.messages.SuggestionsResponseType;
 import com.microsoft.exchange.messages.UpdateFolderResponse;
+import com.microsoft.exchange.messages.UpdateItemResponse;
 import com.microsoft.exchange.types.ArrayOfFoldersType;
 import com.microsoft.exchange.types.ArrayOfRealItemsType;
 import com.microsoft.exchange.types.ArrayOfResolutionType;
@@ -111,9 +112,31 @@ public class ExchangeResponseUtilsImpl implements ExchangeResponseUtils  {
 	 */
 	@Override
 	public Set<ItemType> parseGetItemResponse(GetItemResponse response) {
-		Set<ItemType> items = new HashSet<ItemType>();
 		confirmSuccess(response);
-		ArrayOfResponseMessagesType responseMessages = response.getResponseMessages();
+		return parseItemResponseMessages(response.getResponseMessages());
+	}
+	
+	@Override
+	public Set<ItemIdType> parseUpdateItemResponse(UpdateItemResponse response){
+		confirmSuccess(response);
+		return parseItemIdResponseMessages(response.getResponseMessages());
+	}
+	
+	private Set<ItemIdType> parseItemIdResponseMessages(ArrayOfResponseMessagesType responseMessages){
+		Set<ItemIdType> itemIds = new HashSet<ItemIdType>();
+		List<JAXBElement<? extends ResponseMessageType>> getItemResponseMessages = responseMessages.getCreateItemResponseMessagesAndDeleteItemResponseMessagesAndGetItemResponseMessages();
+		for(JAXBElement<? extends ResponseMessageType> responseMessageElement : getItemResponseMessages) {
+			ItemInfoResponseMessageType itemType = (ItemInfoResponseMessageType) responseMessageElement.getValue();
+			ArrayOfRealItemsType itemsArray = itemType.getItems();
+			for(ItemType i: itemsArray.getItemsAndMessagesAndCalendarItems()){
+				itemIds.add(i.getItemId());
+			}
+		}
+		return itemIds;
+	}
+	
+	private Set<ItemType> parseItemResponseMessages(ArrayOfResponseMessagesType responseMessages){
+		Set<ItemType> items = new HashSet<ItemType>();
 		List<JAXBElement<? extends ResponseMessageType>> getItemResponseMessages = responseMessages.getCreateItemResponseMessagesAndDeleteItemResponseMessagesAndGetItemResponseMessages();
 		for(JAXBElement<? extends ResponseMessageType> responseMessageElement : getItemResponseMessages) {
 			ItemInfoResponseMessageType itemType = (ItemInfoResponseMessageType) responseMessageElement.getValue();

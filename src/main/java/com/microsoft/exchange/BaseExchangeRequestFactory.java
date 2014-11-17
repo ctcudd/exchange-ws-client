@@ -8,7 +8,6 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import javax.xml.bind.JAXBElement;
 import javax.xml.datatype.XMLGregorianCalendar;
@@ -17,6 +16,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.Validate;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.opensaml.ws.wstrust.Code;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.util.CollectionUtils;
@@ -31,8 +31,10 @@ import com.microsoft.exchange.messages.GetFolder;
 import com.microsoft.exchange.messages.GetItem;
 import com.microsoft.exchange.messages.ResolveNames;
 import com.microsoft.exchange.messages.UpdateFolder;
+import com.microsoft.exchange.messages.UpdateItem;
 import com.microsoft.exchange.types.AffectedTaskOccurrencesType;
 import com.microsoft.exchange.types.AndType;
+import com.microsoft.exchange.types.AttendeeType;
 import com.microsoft.exchange.types.BaseFolderIdType;
 import com.microsoft.exchange.types.BaseFolderType;
 import com.microsoft.exchange.types.BaseItemIdType;
@@ -41,7 +43,9 @@ import com.microsoft.exchange.types.BodyTypeResponseType;
 import com.microsoft.exchange.types.CalendarFolderType;
 import com.microsoft.exchange.types.CalendarItemCreateOrDeleteOperationType;
 import com.microsoft.exchange.types.CalendarItemType;
+import com.microsoft.exchange.types.CalendarItemUpdateOperationType;
 import com.microsoft.exchange.types.CalendarViewType;
+import com.microsoft.exchange.types.ConflictResolutionType;
 import com.microsoft.exchange.types.ConstantValueType;
 import com.microsoft.exchange.types.ContactItemType;
 import com.microsoft.exchange.types.DefaultShapeNamesType;
@@ -62,6 +66,7 @@ import com.microsoft.exchange.types.IndexBasePointType;
 import com.microsoft.exchange.types.IndexedPageViewType;
 import com.microsoft.exchange.types.IsGreaterThanOrEqualToType;
 import com.microsoft.exchange.types.IsLessThanOrEqualToType;
+import com.microsoft.exchange.types.ItemChangeType;
 import com.microsoft.exchange.types.ItemIdType;
 import com.microsoft.exchange.types.ItemQueryTraversalType;
 import com.microsoft.exchange.types.ItemResponseShapeType;
@@ -69,12 +74,15 @@ import com.microsoft.exchange.types.ItemType;
 import com.microsoft.exchange.types.MessageDispositionType;
 import com.microsoft.exchange.types.MessageType;
 import com.microsoft.exchange.types.NonEmptyArrayOfAllItemsType;
+import com.microsoft.exchange.types.NonEmptyArrayOfAttendeesType;
 import com.microsoft.exchange.types.NonEmptyArrayOfBaseFolderIdsType;
 import com.microsoft.exchange.types.NonEmptyArrayOfBaseItemIdsType;
 import com.microsoft.exchange.types.NonEmptyArrayOfFieldOrdersType;
 import com.microsoft.exchange.types.NonEmptyArrayOfFolderChangeDescriptionsType;
 import com.microsoft.exchange.types.NonEmptyArrayOfFolderChangesType;
 import com.microsoft.exchange.types.NonEmptyArrayOfFoldersType;
+import com.microsoft.exchange.types.NonEmptyArrayOfItemChangeDescriptionsType;
+import com.microsoft.exchange.types.NonEmptyArrayOfItemChangesType;
 import com.microsoft.exchange.types.NonEmptyArrayOfPathsToElementType;
 import com.microsoft.exchange.types.ObjectFactory;
 import com.microsoft.exchange.types.PathToExtendedFieldType;
@@ -82,19 +90,12 @@ import com.microsoft.exchange.types.PathToUnindexedFieldType;
 import com.microsoft.exchange.types.ResolveNamesSearchScopeType;
 import com.microsoft.exchange.types.RestrictionType;
 import com.microsoft.exchange.types.SetFolderFieldType;
+import com.microsoft.exchange.types.SetItemFieldType;
 import com.microsoft.exchange.types.SortDirectionType;
 import com.microsoft.exchange.types.TargetFolderIdType;
 import com.microsoft.exchange.types.TaskType;
 import com.microsoft.exchange.types.UnindexedFieldURIType;
 
-/**
- * @author ctcudd
- *
- */
-/**
- * @author ctcudd
- *
- */
 /**
  * @author ctcudd
  *
@@ -128,6 +129,7 @@ public class BaseExchangeRequestFactory {
 		if(maxFindItems < EWS_FIND_ITEM_MAX){
 			this.maxFindItems = maxFindItems;
 		}else{
+			this.maxFindItems = EWS_FIND_ITEM_MAX;
 			log.warn("maxFindItems cannot exceed "+EWS_FIND_ITEM_MAX);
 		}
 	}
@@ -413,6 +415,90 @@ public class BaseExchangeRequestFactory {
 		CalendarItemCreateOrDeleteOperationType sendTo = CalendarItemCreateOrDeleteOperationType.SEND_ONLY_TO_ALL;
 		return constructCreateItemInternal(list, parent, disposition, sendTo, folderIdType);
 	}
+
+	//================================================================================
+    // UpdateItem
+    //================================================================================	
+	
+	/**
+	 * Construct an {@link UpdateItem} request which when executed will apply the {@code changes} to the {@code calendarItem}
+	 * @see <a href="http://msdn.microsoft.com/en-us/library/office/aa580254(v=exchg.150).aspx">UpdateItem</a>
+	 * @see <a href="http://msdn.microsoft.com/en-us/library/office/aa581084(v=exchg.150).aspx>UpdateItem operation</a>
+	 * @param calendarItem
+	 * @param changes
+	 * @return
+	 */
+	public final UpdateItem constructUpdateCalendarItem(CalendarItemType calendarItem, NonEmptyArrayOfItemChangesType changes){
+		UpdateItem updateItem = new UpdateItem();
+		//auto resolve conflicting changes
+		updateItem.setConflictResolution(ConflictResolutionType.AUTO_RESOLVE);
+		updateItem.setItemChanges(changes);
+		
+		//messageDisposition required only for message types
+		//updateItem.setMessageDisposition(MessageDispositionType.);
+		
+		TargetFolderIdType targetFolderId = new TargetFolderIdType();
+		targetFolderId.setFolderId(calendarItem.getParentFolderId());
+		
+		updateItem.setSavedItemFolderId(targetFolderId);
+		updateItem.setSendMeetingInvitationsOrCancellations(CalendarItemUpdateOperationType.SEND_ONLY_TO_CHANGED);
+		return updateItem;
+	}
+	
+	/**
+	 * Construct a {@link NonEmptyArrayOfItemChangesType} for a give {@link CalendarItemType} and a {@link Collection} of {@link SetItemFieldType}s
+	 * @param item
+	 * @param fields
+	 * @return
+	 */
+	public NonEmptyArrayOfItemChangesType constructUpdateCalendarItemChanges(CalendarItemType item, Collection<SetItemFieldType> fields){
+		NonEmptyArrayOfItemChangesType changes = new NonEmptyArrayOfItemChangesType();
+		NonEmptyArrayOfItemChangeDescriptionsType updates = new NonEmptyArrayOfItemChangeDescriptionsType();
+		for(SetItemFieldType field : fields){
+			updates.getAppendToItemFieldsAndSetItemFieldsAndDeleteItemFields().add(field);
+		}
+		ItemChangeType change = new ItemChangeType();
+		change.setItemId(item.getItemId());
+		change.setUpdates(updates);
+		changes.getItemChanges().add(change);
+		return changes;
+	}
+	/**
+	 * Construct a {@link SetItemFieldType} 
+	 * @param item
+	 * @return
+	 */
+	public SetItemFieldType constructSetCalendarItemSubject(CalendarItemType item){
+		CalendarItemType c = new CalendarItemType();
+		c.setSubject(item.getSubject());
+		SetItemFieldType changeDescription = new SetItemFieldType();
+		PathToUnindexedFieldType path = new PathToUnindexedFieldType();
+		path.setFieldURI(UnindexedFieldURIType.ITEM_SUBJECT);
+		changeDescription.setPath(getObjectFactory().createPath(path));
+		changeDescription.setCalendarItem(c);
+		return changeDescription;
+	}
+	
+	public SetItemFieldType constructSetCalendarItemRequiredAttendees(CalendarItemType item){
+		CalendarItemType c = new CalendarItemType();
+		c.setRequiredAttendees(item.getRequiredAttendees());
+		SetItemFieldType changeDescription = new SetItemFieldType();
+		PathToUnindexedFieldType path = new PathToUnindexedFieldType();
+		path.setFieldURI(UnindexedFieldURIType.CALENDAR_REQUIRED_ATTENDEES);
+		changeDescription.setPath(getObjectFactory().createPath(path));
+		changeDescription.setCalendarItem(c);
+		return changeDescription;
+	}
+	
+	public SetItemFieldType constructSetCalendarItemExtendedProperty(CalendarItemType item, ExtendedPropertyType exprop){
+		CalendarItemType c = new CalendarItemType();
+		c.getExtendedProperties().add(exprop);
+		SetItemFieldType changeDescription = new SetItemFieldType();
+		PathToExtendedFieldType extendedFieldURI = exprop.getExtendedFieldURI();
+		changeDescription.setPath(getObjectFactory().createPath(extendedFieldURI));
+		changeDescription.setCalendarItem(c);
+		return changeDescription;
+	}
 	
 	//================================================================================
     // GetItem
@@ -484,6 +570,21 @@ public class BaseExchangeRequestFactory {
 		return constructCalendarViewFindItem(startTime, endTime, responseShape,  ItemQueryTraversalType.SHALLOW,  arrayOfFolderIds);
 	}		
 	
+	/**
+	 * Construct a {@link FindItem} rquest which will search the specified {@link BaseFolderIdType}s using the specified {@link RestrictionType}.
+	 * A EWS FindItem operation performed with a request constructed by this function will:
+	 * - not search sub-folders: {@link ItemQueryTraversalType#SHALLOW}
+	 * - return at most {@link #getMaxFindItems()}
+	 * - returns {@link CalendarItemType}s but only the {@link ItemIdType} field is populated: {@link DefaultShapeNamesType#ID_ONLY}
+	 * - searches using a {@link IndexedPageViewType} which means: 
+	 * 		- results can be paged
+ 	 *		- results may contain recurring masters
+ 	 *
+	 * This method
+	 * @param restriction
+	 * @param folderIds - if omitted the {@link FindItem} request will target the {@link DistinguishedFolderIdNameType#CALENDAR}
+	 * @return
+	 */
 	protected FindItem constructIndexedPageViewFindFirstItemIdsShallow(RestrictionType restriction, Collection<? extends BaseFolderIdType> folderIds) {
 		return constructIndexedPageViewFindItemIdsShallow(INIT_BASE_OFFSET, getMaxFindItems(), restriction, folderIds);
 	}
@@ -833,7 +934,8 @@ public class BaseExchangeRequestFactory {
 	// (Typically used with Find<Item|Folder> operations)
     //================================================================================
 	/**
-	 * Construct a {@link RestrictionType} object for use with a {@link FindItem} using a {@link CalendarViewType}.  
+	 * Construct a {@link RestrictionType} object for use with a {@link FindItem} using a {@link IndexedPageViewType}.  
+	 * {@link RestrictionType} cannot be used with {@link CalendarViewType}.
 	 * @param startTime
 	 * @param endTime
 	 * @return a {@link RestrictionType} which targets {@link CalendarItemType} betweem {@code startTime} and {@code endTime}
@@ -861,7 +963,7 @@ public class BaseExchangeRequestFactory {
 	 * @param endTime
 	 * @return {@link JAXBElement<IsLessThanOrEqualToType>}
 	 */
-	private final JAXBElement<IsLessThanOrEqualToType> getCalendarItemEndSearchExpression(Date endTime) {
+	protected final JAXBElement<IsLessThanOrEqualToType> getCalendarItemEndSearchExpression(Date endTime) {
 		ObjectFactory of = getObjectFactory();
 		IsLessThanOrEqualToType endType = new IsLessThanOrEqualToType();
 		XMLGregorianCalendar end = ExchangeDateUtils.convertDateToXMLGregorianCalendar(endTime);
@@ -883,7 +985,7 @@ public class BaseExchangeRequestFactory {
 	 * @param endTime
 	 * @return {@link JAXBElement<IsGreaterThanOrEqualToType>}
 	 */
-	private final JAXBElement<IsGreaterThanOrEqualToType> getCalendarItemStartSearchExpression(Date startTime) {
+	protected final JAXBElement<IsGreaterThanOrEqualToType> getCalendarItemStartSearchExpression(Date startTime) {
 		ObjectFactory of = getObjectFactory();
 		IsGreaterThanOrEqualToType startType = new IsGreaterThanOrEqualToType();
 		XMLGregorianCalendar start = ExchangeDateUtils.convertDateToXMLGregorianCalendar(startTime);
@@ -961,6 +1063,7 @@ public class BaseExchangeRequestFactory {
 		sortOrder.setOrder(SortDirectionType.ASCENDING);
 		PathToUnindexedFieldType path = new PathToUnindexedFieldType();
 		path.setFieldURI(UnindexedFieldURIType.ITEM_ITEM_ID);
+		//path.setFieldURI(UnindexedFieldURIType.CALENDAR_START);
 		JAXBElement<PathToUnindexedFieldType> sortPath = of.createFieldURI(path);
 		sortOrder.setPath(sortPath);
 		return sortOrder;
