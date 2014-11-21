@@ -38,6 +38,7 @@ import com.microsoft.exchange.messages.ResponseCodeType;
 import com.microsoft.exchange.messages.UpdateFolderResponse;
 import com.microsoft.exchange.messages.UpdateItemResponse;
 import com.microsoft.exchange.types.BaseFolderType;
+import com.microsoft.exchange.types.CalendarItemType;
 import com.microsoft.exchange.types.FolderIdType;
 import com.microsoft.exchange.types.ItemIdType;
 import com.microsoft.exchange.types.ItemType;
@@ -100,5 +101,12 @@ public interface ExchangeResponseUtils {
 	 * @return
 	 */
 	Set<ItemIdType> parseUpdateItemResponse(UpdateItemResponse response);
+
+	/**
+	 * @param response
+	 * @return
+	 */
+	Set<CalendarItemType> parseFindCalendarItemResponse(
+			FindItemResponse response);
 
 }

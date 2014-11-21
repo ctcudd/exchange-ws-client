@@ -111,7 +111,7 @@ public class ExchangeEventConverterImpl implements ExchangeEventConverter {
 
 	
 	@Override
-	public Calendar convertToCalendar(Collection<ItemType> items, String upn) {
+	public Calendar convertToCalendar(Collection<? extends ItemType> items, String upn) {
 		Calendar result = new Calendar();
 		
 		result.getProperties().add(PROD_ID);

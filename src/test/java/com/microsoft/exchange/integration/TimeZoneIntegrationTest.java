@@ -18,9 +18,14 @@
  */
 package com.microsoft.exchange.integration;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
-import java.util.GregorianCalendar;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Set;
 
 import javax.xml.datatype.DatatypeConfigurationException;
@@ -42,7 +47,6 @@ import com.microsoft.exchange.impl.RequestServerTimeZoneInterceptor;
 import com.microsoft.exchange.types.CalendarItemType;
 import com.microsoft.exchange.types.ItemIdType;
 
-import edu.emory.mathcs.backport.java.util.Collections;
 
 public class TimeZoneIntegrationTest {
 	
@@ -126,7 +130,7 @@ public class TimeZoneIntegrationTest {
 		ItemIdType itemId = exchangeCalendarDao.createCalendarItem(upn, calendarItem);
 		assertNotNull(itemId);
 		Set<ItemIdType> itemIds = Collections.singleton(itemId);
-		Set<CalendarItemType> calendarItems = exchangeCalendarDao.getCalendarItems(upn, itemIds);
+		Collection<CalendarItemType> calendarItems = exchangeCalendarDao.getCalendarItems(upn, itemIds);
 		assertNotNull(calendarItems);
 		CalendarItemType createdCalendarItem = DataAccessUtils.singleResult(calendarItems);
 		assertNotNull(createdCalendarItem);
@@ -176,7 +180,7 @@ public class TimeZoneIntegrationTest {
 		ItemIdType itemId = exchangeCalendarDao.createCalendarItem(upn, calendarItem);
 		assertNotNull(itemId);
 		Set<ItemIdType> itemIds = Collections.singleton(itemId);
-		Set<CalendarItemType> calendarItems = exchangeCalendarDao.getCalendarItems(upn, itemIds);
+		Collection<CalendarItemType> calendarItems = exchangeCalendarDao.getCalendarItems(upn, itemIds);
 		assertNotNull(calendarItems);
 		CalendarItemType createdCalendarItem = DataAccessUtils.singleResult(calendarItems);
 		assertNotNull(createdCalendarItem);

@@ -8,6 +8,7 @@ import java.util.Collection;
 import com.microsoft.exchange.types.ExtendedPropertyType;
 import com.microsoft.exchange.types.ItemType;
 import com.microsoft.exchange.types.MapiPropertyTypeType;
+import com.microsoft.exchange.types.NonEmptyArrayOfPropertyValuesType;
 
 /**
  * @author ctcudd
@@ -31,7 +32,9 @@ public abstract class ExchangeExtendedPropertyStringArray extends AbstractExchan
 	public ExtendedPropertyType constructExtendedProperty(Collection<String> values) {
 		ExtendedPropertyType extendedProperty = new ExtendedPropertyType();
 		extendedProperty.setExtendedFieldURI(this.getPathToExtendedFieldType());
-		extendedProperty.getValues().getValues().addAll(values);
+		NonEmptyArrayOfPropertyValuesType valuesArray = new NonEmptyArrayOfPropertyValuesType();
+		valuesArray.getValues().addAll(values);
+		extendedProperty.setValues(valuesArray);
 		return extendedProperty;
 	}
 

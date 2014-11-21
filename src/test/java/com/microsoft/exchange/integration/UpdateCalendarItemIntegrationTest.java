@@ -22,6 +22,7 @@ import com.microsoft.exchange.types.CalendarItemType;
 import com.microsoft.exchange.types.EmailAddressType;
 import com.microsoft.exchange.types.ImportanceChoicesType;
 import com.microsoft.exchange.types.ItemIdType;
+import com.microsoft.exchange.types.LegacyFreeBusyType;
 import com.microsoft.exchange.types.NonEmptyArrayOfAttendeesType;
 import com.microsoft.exchange.types.NonEmptyArrayOfItemChangesType;
 import com.microsoft.exchange.types.SetItemFieldType;
@@ -37,6 +38,65 @@ public class UpdateCalendarItemIntegrationTest extends BaseExchangeCalendarDataD
 	public void isAutowired(){
 		assertNotNull(exchangeCalendarDataDao);
 		assertNotNull(upn);
+	}
+	
+	@Test
+	public void updateCalendarItemSetShowAsFree(){
+		String initialSubject = "THISISSUBJECTYES";
+		ImportanceChoicesType initialImportance = ImportanceChoicesType.HIGH;
+		LegacyFreeBusyType initialFreeBusy = LegacyFreeBusyType.BUSY;
+		
+		CalendarItemType c = new CalendarItemType();
+		c.setSubject(initialSubject);
+		c.setImportance(initialImportance);
+		c.setLegacyFreeBusyStatus(initialFreeBusy);
+		
+		ItemIdType createdItemId = exchangeCalendarDataDao.createCalendarItem(upn, c);
+		assertNotNull(createdItemId);
+		
+		//retrieve the newly creatd item
+		Set<ItemIdType> expectedItemId = Collections.singleton(createdItemId);
+		Collection<CalendarItemType> createdItems = exchangeCalendarDataDao.getCalendarItems(upn, expectedItemId);
+		
+		//ensures a singular non null result
+		assertNotNull(createdItems);
+		assertEquals(1, createdItems.size());
+		CalendarItemType createdItem = DataAccessUtils.singleResult(createdItems);
+		
+		//make sure the fields match
+		assertEquals(createdItemId, createdItem.getItemId());
+		assertEquals(initialSubject, createdItem.getSubject());
+		assertEquals(initialImportance, createdItem.getImportance());
+		assertEquals(initialFreeBusy, createdItem.getLegacyFreeBusyStatus());
+		
+		//update the free busy status
+		createdItem.setLegacyFreeBusyStatus(LegacyFreeBusyType.FREE);
+		//construct the setItemField
+		SetItemFieldType setItem = exchangeCalendarDataDao.getRequestFactory().constructSetCalendarItemLegacyFreeBusy(createdItem);
+		//wrap the change
+		NonEmptyArrayOfItemChangesType changes = exchangeCalendarDataDao.getRequestFactory().constructUpdateCalendarItemChanges(createdItem, Collections.singleton(setItem));
+		//perform the update
+		UpdateItem request = exchangeCalendarDataDao.getRequestFactory().constructUpdateCalendarItem(createdItem, changes);
+		UpdateItemResponse response = exchangeCalendarDataDao.getWebServices().updateItem(request);
+		Set<ItemIdType> updatedItemIds = exchangeCalendarDataDao.getResponseUtils().parseUpdateItemResponse(response);
+		
+		//get the update item
+		Collection<CalendarItemType> updatedItems = exchangeCalendarDataDao.getCalendarItems(upn, updatedItemIds);
+		
+		//ensures a singular non null result
+		assertNotNull(updatedItems);
+		assertEquals(1, updatedItems.size());
+		CalendarItemType updatedItem = DataAccessUtils.singleResult(updatedItems);
+		
+		//make sure the fields match
+		assertEquals(createdItem.getItemId().getId(), updatedItem.getItemId().getId());
+		assertEquals(initialSubject, updatedItem.getSubject());
+		assertEquals(initialImportance, updatedItem.getImportance());
+		assertEquals(LegacyFreeBusyType.FREE, updatedItem.getLegacyFreeBusyStatus());
+		
+		//cleanup
+		boolean deleteSuccess = exchangeCalendarDataDao.deleteCalendarItems(upn, Collections.singleton(updatedItem.getItemId()));
+		assertTrue(deleteSuccess);
 	}
 	
 	@Test
@@ -66,10 +126,13 @@ public class UpdateCalendarItemIntegrationTest extends BaseExchangeCalendarDataD
 		assertEquals(initialSubject, createdItem.getSubject());
 		assertEquals(initialImportance, createdItem.getImportance());
 		
+		//set the new subject on the calendar item
 		createdItem.setSubject(newSubject);
+		//construct the setItemField object specifying the subject field 
 		SetItemFieldType setItem = exchangeCalendarDataDao.getRequestFactory().constructSetCalendarItemSubject(createdItem);
+		//wrap the change
 		NonEmptyArrayOfItemChangesType changes = exchangeCalendarDataDao.getRequestFactory().constructUpdateCalendarItemChanges(createdItem, Collections.singleton(setItem));
-		
+		//perform the update
 		UpdateItem request = exchangeCalendarDataDao.getRequestFactory().constructUpdateCalendarItem(createdItem, changes);
 		UpdateItemResponse response = exchangeCalendarDataDao.getWebServices().updateItem(request);
 		Set<ItemIdType> updatedItemIds = exchangeCalendarDataDao.getResponseUtils().parseUpdateItemResponse(response);

@@ -21,6 +21,7 @@ package com.microsoft.exchange;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashSet;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.Validate;
@@ -54,6 +55,7 @@ import com.microsoft.exchange.types.CalendarPermissionReadAccessType;
 import com.microsoft.exchange.types.CalendarPermissionSetType;
 import com.microsoft.exchange.types.CalendarPermissionType;
 import com.microsoft.exchange.types.CalendarViewType;
+import com.microsoft.exchange.types.DeclineItemType;
 import com.microsoft.exchange.types.DefaultShapeNamesType;
 import com.microsoft.exchange.types.DisposalType;
 import com.microsoft.exchange.types.DistinguishedFolderIdNameType;
@@ -71,10 +73,13 @@ import com.microsoft.exchange.types.MessageType;
 import com.microsoft.exchange.types.NonEmptyArrayOfAllItemsType;
 import com.microsoft.exchange.types.NonEmptyArrayOfBaseFolderIdsType;
 import com.microsoft.exchange.types.NonEmptyArrayOfFoldersType;
+import com.microsoft.exchange.types.NonEmptyArrayOfTimeZoneIdType;
 import com.microsoft.exchange.types.ObjectFactory;
+import com.microsoft.exchange.types.PathToExtendedFieldType;
 import com.microsoft.exchange.types.PathToUnindexedFieldType;
 import com.microsoft.exchange.types.PermissionActionType;
 import com.microsoft.exchange.types.ResolveNamesSearchScopeType;
+import com.microsoft.exchange.types.ResponseTypeType;
 import com.microsoft.exchange.types.RestrictionType;
 import com.microsoft.exchange.types.SearchFolderTraversalType;
 import com.microsoft.exchange.types.SearchFolderType;
@@ -82,13 +87,42 @@ import com.microsoft.exchange.types.SearchParametersType;
 import com.microsoft.exchange.types.SuggestionsViewOptions;
 import com.microsoft.exchange.types.TaskType;
 import com.microsoft.exchange.types.TasksFolderType;
+import com.microsoft.exchange.types.TentativelyAcceptItemType;
 import com.microsoft.exchange.types.TimeZone;
 import com.microsoft.exchange.types.UnindexedFieldURIType;
 import com.microsoft.exchange.types.UserConfigurationNameType;
 import com.microsoft.exchange.types.UserIdType;
+import com.microsoft.exchange.types.WellKnownResponseObjectType;
 
 public class ExchangeRequestFactory extends BaseExchangeRequestFactory{
+	
+	Collection<PathToExtendedFieldType> itemExtendedPropertyPaths = new HashSet<PathToExtendedFieldType>();
+	Collection<PathToExtendedFieldType> folderExtendedPropertyPaths = new HashSet<PathToExtendedFieldType>();
+	
+	/* (non-Javadoc)
+	 * @see com.microsoft.exchange.BaseExchangeRequestFactory#getItemExtendedPropertyPaths()
+	 */
+	@Override
+	public Collection<PathToExtendedFieldType> getItemExtendedPropertyPaths() {
+		return itemExtendedPropertyPaths;
+	}
+	
+	public void setItemExtendedPropertyPaths(Collection<PathToExtendedFieldType> itemPaths) {
+		itemExtendedPropertyPaths = itemPaths;
+	}
 
+	/* (non-Javadoc)
+	 * @see com.microsoft.exchange.BaseExchangeRequestFactory#getFolderExtendedPropertyPaths()
+	 */
+	@Override
+	public Collection<PathToExtendedFieldType> getFolderExtendedPropertyPaths() {
+		return folderExtendedPropertyPaths;
+	}	
+	
+	public void setFolderExtendedPropertyPaths(Collection<PathToExtendedFieldType> folderPaths) {
+		this.folderExtendedPropertyPaths = folderPaths;
+	}
+	
 	/**
 	 * Construct a {@link ResolveNames} request which will search the Exchange
 	 * server using the
@@ -112,7 +146,9 @@ public class ExchangeRequestFactory extends BaseExchangeRequestFactory{
 	public GetServerTimeZones constructGetServerTimeZones(String tzid, boolean returnFullTimeZoneData){
 		GetServerTimeZones request = new GetServerTimeZones();
 		if(StringUtils.isNotBlank(tzid)){
-			request.getIds().getIds().add(tzid);
+			NonEmptyArrayOfTimeZoneIdType tzidArray = new NonEmptyArrayOfTimeZoneIdType();
+			tzidArray.getIds().add(tzid);
+			request.setIds(tzidArray);
 		}
 		request.setReturnFullTimeZoneData(returnFullTimeZoneData);
 		return request;
@@ -436,24 +472,65 @@ public class ExchangeRequestFactory extends BaseExchangeRequestFactory{
 	}
 	
 	/**
+	 * Construct a {@link CreateItem} object which can be used to respond to a calendarInvitation
+	 * @param itemId - the itemId of the calendar invite you wish to respond to.
+	 * @param response - the type of response you wish to issue.  only {@link ResponseTypeType#ACCEPT}, {@link ResponseTypeType#DECLINE}, and {@link ResponseTypeType#TENTATIVE} are valid.
+	 * @return
+	 */
+	public CreateItem constructCreateItemResponse(ItemIdType itemId, ResponseTypeType response){
+		CreateItem request = new CreateItem();
+		request.setMessageDisposition(MessageDispositionType.SEND_AND_SAVE_COPY);
+		NonEmptyArrayOfAllItemsType arrayOfItems = new NonEmptyArrayOfAllItemsType();
+		
+		WellKnownResponseObjectType responseType = null;
+		switch(response){
+			case ACCEPT : responseType = new AcceptItemType();
+				break;
+			case DECLINE : responseType = new DeclineItemType();
+				break;
+			case TENTATIVE : responseType = new TentativelyAcceptItemType();
+				break;
+			default: log.warn(response +" is not a WellKnownResponse type");
+				return null;
+		}
+		responseType.setReferenceItemId(itemId);
+		arrayOfItems.getItemsAndMessagesAndCalendarItems().add(responseType);
+		request.setItems(arrayOfItems);
+		return request;
+	}
+	
+	/**
 	 * Construct {@link CreateItem} specific accepting {@link CalendarItemType}s using {@link AcceptItemType}
 	 * @category CreateItem AcceptItem
 	 * 
 	 * @param itemId
 	 * @return {@link CreateItem}
 	 */
-	public CreateItem constructCreateAcceptItem(ItemIdType itemId) {
-		CreateItem request = new CreateItem();
-		request.setMessageDisposition(MessageDispositionType.SEND_AND_SAVE_COPY);
-		NonEmptyArrayOfAllItemsType arrayOfItems = new NonEmptyArrayOfAllItemsType();
-		
-		AcceptItemType acceptItem = new AcceptItemType();
-		acceptItem.setReferenceItemId(itemId);
-		
-		arrayOfItems.getItemsAndMessagesAndCalendarItems().add(acceptItem);
-		request.setItems(arrayOfItems);
-		return request;
+	public CreateItem constructCreateAcceptItemResponse(ItemIdType itemId) {
+		return constructCreateItemResponse(itemId, ResponseTypeType.ACCEPT);
 	}
+	
+	/**
+	 * Construct {@link CreateItem} specific declining {@link CalendarItemType}s using {@link DeclineItemType}
+	 * @category CreateItem AcceptItem
+	 * 
+	 * @param itemId
+	 * @return {@link CreateItem}
+	 */
+	public CreateItem constructCreateDeclineItemResponse(ItemIdType itemId){
+		return constructCreateItemResponse(itemId, ResponseTypeType.DECLINE);
+	}
+	
+	/**
+	 * Construct {@link CreateItem} specific tentatively accepting {@link CalendarItemType}s using {@link TentativelyAcceptItemType}
+	 * @category CreateItem AcceptItem
+	 * 
+	 * @param itemId
+	 * @return {@link CreateItem}
+	 */
+	public CreateItem constructCreateTentativeItemResponse(ItemIdType itemId){
+		return constructCreateItemResponse(itemId, ResponseTypeType.TENTATIVE);
+	}	
 
 	//================================================================================
     // GetItem
@@ -622,7 +699,6 @@ public class ExchangeRequestFactory extends BaseExchangeRequestFactory{
 			distinguishedFolderIdType.setId(DistinguishedFolderIdNameType.CALENDAR);
 			baseFolderIds = Collections.singleton(distinguishedFolderIdType);
 		}
-		return constructCalendarViewFindItemIdsByDateRange(startTime, endTime, folderIds);
-	}		
-	
+		return constructCalendarViewFindItemIdsByDateRange(startTime, endTime, baseFolderIds);
+	}
 }

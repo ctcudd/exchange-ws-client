@@ -30,8 +30,6 @@ import java.util.Set;
 
 import javax.xml.bind.JAXBContext;
 
-import net.fortuna.ical4j.model.Calendar;
-
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.Validate;
 import org.apache.commons.lang.time.StopWatch;
@@ -45,7 +43,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.support.DataAccessUtils;
 import org.springframework.util.CollectionUtils;
-import org.springframework.util.StopWatch.TaskInfo;
 
 import com.microsoft.exchange.ExchangeDateUtils;
 import com.microsoft.exchange.ExchangeRequestFactory;
@@ -63,6 +60,7 @@ import com.microsoft.exchange.messages.DeleteFolder;
 import com.microsoft.exchange.messages.DeleteFolderResponse;
 import com.microsoft.exchange.messages.DeleteItem;
 import com.microsoft.exchange.messages.DeleteItemResponse;
+import com.microsoft.exchange.messages.EmptyFolder;
 import com.microsoft.exchange.messages.EmptyFolderResponse;
 import com.microsoft.exchange.messages.FindFolder;
 import com.microsoft.exchange.messages.FindFolderResponse;
@@ -76,6 +74,8 @@ import com.microsoft.exchange.messages.GetServerTimeZones;
 import com.microsoft.exchange.messages.GetServerTimeZonesResponse;
 import com.microsoft.exchange.messages.ResolveNames;
 import com.microsoft.exchange.messages.ResolveNamesResponse;
+import com.microsoft.exchange.messages.UpdateItem;
+import com.microsoft.exchange.messages.UpdateItemResponse;
 import com.microsoft.exchange.types.ArrayOfRecipientsType;
 import com.microsoft.exchange.types.BaseFolderIdType;
 import com.microsoft.exchange.types.BaseFolderType;
@@ -89,17 +89,18 @@ import com.microsoft.exchange.types.DefaultShapeNamesType;
 import com.microsoft.exchange.types.DisposalType;
 import com.microsoft.exchange.types.DistinguishedFolderIdNameType;
 import com.microsoft.exchange.types.EmailAddressType;
-import com.microsoft.exchange.types.ExtendedPropertyType;
 import com.microsoft.exchange.types.FolderIdType;
 import com.microsoft.exchange.types.FolderQueryTraversalType;
 import com.microsoft.exchange.types.ItemIdType;
 import com.microsoft.exchange.types.ItemType;
+import com.microsoft.exchange.types.LegacyFreeBusyType;
 import com.microsoft.exchange.types.MessageType;
+import com.microsoft.exchange.types.NonEmptyArrayOfItemChangesType;
+import com.microsoft.exchange.types.SetItemFieldType;
 import com.microsoft.exchange.types.SingleRecipientType;
 import com.microsoft.exchange.types.TaskType;
 import com.microsoft.exchange.types.TasksFolderType;
 import com.microsoft.exchange.types.TimeZoneDefinitionType;
-import com.microsoft.exchange.messages.EmptyFolder;
 
 
 /**
@@ -121,6 +122,7 @@ public class BaseExchangeCalendarDataDao {
 	
 	// TODO no references, needed internally?
 	private ExchangeRequestFactory requestFactory = new ExchangeRequestFactory();
+	
 	// TODO no references, needed internally?
 	private ExchangeResponseUtils responseUtils = new ExchangeResponseUtilsImpl();
 
@@ -195,10 +197,16 @@ public class BaseExchangeCalendarDataDao {
 		this.jaxbContext = jaxbContext;
 	}
 	
+	/**
+	 * Function for determining how long to sleep before retrying a failed operation
+	 * @param retryCount
+	 * @return
+	 */
 	public static long getWaitTimeExp(int retryCount) {
 		long waitTime = ((long) Math.pow(2, retryCount) * 100L);
 	    return waitTime;
 	}
+	
 	protected void setContextCredentials(String upn) {
 		Validate.isTrue(StringUtils.isNotBlank(upn), "upn argument cannot be blank");
 		ConnectingSIDType connectingSID = new ConnectingSIDType();
@@ -516,10 +524,11 @@ public class BaseExchangeCalendarDataDao {
 	}
 	
 	private Set<ItemType> getItemsInternal(String upn, Collection<ItemIdType> itemIds, int depth){
+		Set<ItemType> results = new HashSet<ItemType>();
 		Validate.isTrue(StringUtils.isNotBlank(upn), "upn argument cannot be blank");
-		Validate.notEmpty(itemIds, "itemids argument cannot be empty");
-		
-		//folderIds can be null
+		if(CollectionUtils.isEmpty(itemIds)) {
+			return results;
+		}
 
 		int newDepth = depth +1;
 		if(depth > getMaxRetries()) {
@@ -659,15 +668,25 @@ public class BaseExchangeCalendarDataDao {
 				return DataAccessUtils.singleResult(results);
 			}
 		}
-	}
-	
-	
+	}	
+    //================================================================================
+    // ServerTimeZones
+    //================================================================================
 	public List<TimeZoneDefinitionType> getServerTimeZones(String tzid, boolean fullTimeZoneData){
 		GetServerTimeZones request = getRequestFactory().constructGetServerTimeZones(tzid, fullTimeZoneData);
 		setContextCredentials(getAdminUpn());
 		GetServerTimeZonesResponse response = getWebServices().getServerTimeZones(request);
 		return getResponseUtils().parseGetServerTimeZonesResponse(response);
 	}
+	
+	public List<TimeZoneDefinitionType> getServerTimeZones(boolean fullTimeZoneData){
+		return getServerTimeZones(null,fullTimeZoneData);
+	}
+	
+	public TimeZoneDefinitionType getServerTimeZone(String tzid, boolean fullTimeZoneData){
+		List<TimeZoneDefinitionType> serverTimeZones = getServerTimeZones(tzid,fullTimeZoneData);
+		return DataAccessUtils.singleResult(serverTimeZones);
+	}	
 	
 	public boolean isEmpty(String upn, FolderIdType folderId){
 		Set<ItemIdType> itemIds = findindFirstItemIdSet(upn, Collections.singleton(folderId));
@@ -692,6 +711,7 @@ public class BaseExchangeCalendarDataDao {
 		EmptyFolderResponse response = getWebServices().emptyFolder(request);
 		return getResponseUtils().parseEmptyFolderResponse(response);
 	}
+	
 	/**
 	 * Deleting a calendarFolder with many (1k+) items is a problem.  You will always be throttled because the FindItemCount is 1000 and not configurable in Exchange Online.
 	 * More info on throttling http://msdn.microsoft.com/en-us/library/office/jj945066(v=exchg.150).aspx
@@ -809,6 +829,20 @@ public class BaseExchangeCalendarDataDao {
 			itemId=items.get(0);
 		}
 		return itemId;
+	}
+	
+	public boolean updateCalendarItemSetLegacyFreeBusy(String upn, CalendarItemType c){
+		boolean itemUpdated = false;
+		SetItemFieldType setField = getRequestFactory().constructSetCalendarItemLegacyFreeBusy(c);
+		NonEmptyArrayOfItemChangesType changes = getRequestFactory().constructUpdateCalendarItemChanges(c, Collections.singleton(setField));
+		UpdateItem request = getRequestFactory().constructUpdateCalendarItem(c, changes);
+		UpdateItemResponse response = getWebServices().updateItem(request);
+		Set<ItemIdType> itemIds = getResponseUtils().parseUpdateItemResponse(response);
+		if(!CollectionUtils.isEmpty(itemIds)){
+			ItemIdType itemId = DataAccessUtils.singleResult(itemIds);
+			itemUpdated = c.getItemId().getId().equals(itemId.getId());
+		}
+		return itemUpdated;
 	}
 	
 }

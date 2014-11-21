@@ -31,6 +31,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
@@ -315,19 +316,22 @@ public class BaseExchangeCalendarDataDaoIntegrationTest {
 	}
 	
 	@Test
-	public void createGetDeleteEmptyCalendarItem(){
-		
+	public void createGetDeleteCalendarItem(){
+		UUID seed = UUID.randomUUID();
 		CalendarItemType calendarItem = new CalendarItemType();
+		
+		calendarItem.setUID(seed.toString());
 		ItemIdType calendarItemId = exchangeCalendarDataDao.createCalendarItem(upn, calendarItem);
 		assertNotNull(calendarItemId);
+		
 		Collection<CalendarItemType> createdCalendarItems = exchangeCalendarDataDao.getCalendarItems(upn, Collections.singleton(calendarItemId));
 		CalendarItemType createdCalendarItem = DataAccessUtils.singleResult(createdCalendarItems);
 		assertNotNull(createdCalendarItem);
 		assertNotNull(createdCalendarItem.getStart());
+		assertEquals(seed.toString(), calendarItem.getUID());
 		
 		boolean deleteSuccess = exchangeCalendarDataDao.deleteCalendarItems(upn, Collections.singleton(calendarItemId));
 		assertTrue(deleteSuccess);
-		
 	}
 	
 	@Test

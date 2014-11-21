@@ -6,8 +6,8 @@ package com.microsoft.exchange;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import javax.xml.bind.JAXBElement;
 import javax.xml.datatype.XMLGregorianCalendar;
@@ -16,9 +16,6 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.Validate;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.opensaml.ws.wstrust.Code;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.util.CollectionUtils;
 
 import com.microsoft.exchange.messages.CreateFolder;
@@ -34,7 +31,6 @@ import com.microsoft.exchange.messages.UpdateFolder;
 import com.microsoft.exchange.messages.UpdateItem;
 import com.microsoft.exchange.types.AffectedTaskOccurrencesType;
 import com.microsoft.exchange.types.AndType;
-import com.microsoft.exchange.types.AttendeeType;
 import com.microsoft.exchange.types.BaseFolderIdType;
 import com.microsoft.exchange.types.BaseFolderType;
 import com.microsoft.exchange.types.BaseItemIdType;
@@ -74,7 +70,6 @@ import com.microsoft.exchange.types.ItemType;
 import com.microsoft.exchange.types.MessageDispositionType;
 import com.microsoft.exchange.types.MessageType;
 import com.microsoft.exchange.types.NonEmptyArrayOfAllItemsType;
-import com.microsoft.exchange.types.NonEmptyArrayOfAttendeesType;
 import com.microsoft.exchange.types.NonEmptyArrayOfBaseFolderIdsType;
 import com.microsoft.exchange.types.NonEmptyArrayOfBaseItemIdsType;
 import com.microsoft.exchange.types.NonEmptyArrayOfFieldOrdersType;
@@ -100,7 +95,7 @@ import com.microsoft.exchange.types.UnindexedFieldURIType;
  * @author ctcudd
  *
  */
-public class BaseExchangeRequestFactory {
+public abstract class BaseExchangeRequestFactory {
 	
 
 	protected static final int EWS_FIND_ITEM_MAX = 1000;
@@ -137,32 +132,12 @@ public class BaseExchangeRequestFactory {
 	/**
 	 * The {@link ExtendedPropertyType}'s identified by this {@link Collection} of {@link PathToExtendedFieldType} will be returned by all GetItem operations.
 	 */
-	private Collection<PathToExtendedFieldType> itemExtendedPropertyPaths = new HashSet<PathToExtendedFieldType>();
-	@Autowired(required=false) @Qualifier("extendedPropertiesForItems")
-	public void setItemExtendedPropertyPaths(Collection<PathToExtendedFieldType> extendedPropertyPaths) {
-		this.itemExtendedPropertyPaths = extendedPropertyPaths;
-	}
-	public Collection<PathToExtendedFieldType> getItemExtendedPropertyPaths() {
-		return itemExtendedPropertyPaths;
-	}
+	public abstract Collection<PathToExtendedFieldType> getItemExtendedPropertyPaths();
 	
 	/**
 	 * The {@link ExtendedPropertyType}'s identified by this  {@link Collection} of {@link PathToExtendedFieldType} will be returned by all GetFolder operations.
 	 */
-	private Collection<PathToExtendedFieldType> folderExtendedPropertyPaths = new HashSet<PathToExtendedFieldType>();
-	/**
-	 * @return the folderExtendedPropertyPaths
-	 */
-	public Collection<PathToExtendedFieldType> getFolderExtendedPropertyPaths() {
-		return folderExtendedPropertyPaths;
-	}
-	/**
-	 * @param folderExtendedPropertyPaths the folderExtendedPropertyPaths to set
-	 */
-	public void setFolderExtendedPropertyPaths(
-			Collection<PathToExtendedFieldType> folderExtendedPropertyPaths) {
-		this.folderExtendedPropertyPaths = folderExtendedPropertyPaths;
-	}
+	public abstract Collection<PathToExtendedFieldType> getFolderExtendedPropertyPaths();
 
 	private final NonEmptyArrayOfPathsToElementType getArrayOfPathsToElementType(Collection<PathToExtendedFieldType> paths){
 		NonEmptyArrayOfPathsToElementType arrayOfPaths = new NonEmptyArrayOfPathsToElementType();
@@ -379,7 +354,7 @@ public class BaseExchangeRequestFactory {
 	 * @param folderIdType - optional.  The item will be saved in the Primary Tasks folder if omitted
 	 * @return {@link CreateItem} 
 	 */
-	protected CreateItem constructCreateTaskItem(Collection<TaskType> list,
+	public CreateItem constructCreateTaskItem(Collection<TaskType> list,
 			CalendarItemCreateOrDeleteOperationType sendTo,
 			FolderIdType folderIdType) {
 		return constructCreateItemInternal(list, DistinguishedFolderIdNameType.TASKS, null, sendTo, folderIdType);
@@ -479,6 +454,17 @@ public class BaseExchangeRequestFactory {
 		return changeDescription;
 	}
 	
+	public SetItemFieldType constructSetCalendarItemLegacyFreeBusy(CalendarItemType item){
+		CalendarItemType c = new CalendarItemType();
+		c.setLegacyFreeBusyStatus(item.getLegacyFreeBusyStatus());
+		SetItemFieldType changeDescription = new SetItemFieldType();
+		PathToUnindexedFieldType path = new PathToUnindexedFieldType();
+		path.setFieldURI(UnindexedFieldURIType.CALENDAR_LEGACY_FREE_BUSY_STATUS);
+		changeDescription.setPath(getObjectFactory().createPath(path));
+		changeDescription.setCalendarItem(c);
+		return changeDescription;
+	}
+	
 	public SetItemFieldType constructSetCalendarItemRequiredAttendees(CalendarItemType item){
 		CalendarItemType c = new CalendarItemType();
 		c.setRequiredAttendees(item.getRequiredAttendees());
@@ -563,7 +549,7 @@ public class BaseExchangeRequestFactory {
 		return findItem;
 	}
 	
-	protected FindItem constructCalendarViewFindItemIdsByDateRange(Date startTime, Date endTime, Collection<FolderIdType> folderIds) {
+	protected FindItem constructCalendarViewFindItemIdsByDateRange(Date startTime, Date endTime, Collection<? extends BaseFolderIdType> folderIds) {
 		NonEmptyArrayOfBaseFolderIdsType arrayOfFolderIds = new NonEmptyArrayOfBaseFolderIdsType();
 		arrayOfFolderIds.getFolderIdsAndDistinguishedFolderIds().addAll(folderIds);
 		ItemResponseShapeType responseShape = constructTextualItemResponseShapeInternal(DefaultShapeNamesType.ID_ONLY);
@@ -654,8 +640,7 @@ public class BaseExchangeRequestFactory {
 
 		if (!CollectionUtils.isEmpty(folderIds)) {
 			NonEmptyArrayOfBaseFolderIdsType parentFolderIds = new NonEmptyArrayOfBaseFolderIdsType();
-			parentFolderIds.getFolderIdsAndDistinguishedFolderIds().addAll(
-					folderIds);
+			parentFolderIds.getFolderIdsAndDistinguishedFolderIds().addAll(folderIds);
 			findItem.setParentFolderIds(parentFolderIds);
 		}
 
@@ -756,7 +741,9 @@ public class BaseExchangeRequestFactory {
 	 */
 	private final FolderResponseShapeType constructFolderResponseShapeInternal(DefaultShapeNamesType shape, NonEmptyArrayOfPathsToElementType exProps){
 		FolderResponseShapeType responseShape = new FolderResponseShapeType();
-		responseShape.setAdditionalProperties(exProps);
+		if(null != exProps && !CollectionUtils.isEmpty(exProps.getPaths())){
+			responseShape.setAdditionalProperties(exProps);
+		}
 		responseShape.setBaseShape(shape);
 		return responseShape;
 	}
@@ -968,7 +955,8 @@ public class BaseExchangeRequestFactory {
 		IsLessThanOrEqualToType endType = new IsLessThanOrEqualToType();
 		XMLGregorianCalendar end = ExchangeDateUtils.convertDateToXMLGregorianCalendar(endTime);
 		PathToUnindexedFieldType endPath = new PathToUnindexedFieldType();
-		endPath.setFieldURI(UnindexedFieldURIType.CALENDAR_END);
+		//endPath.setFieldURI(UnindexedFieldURIType.CALENDAR_END);
+		endPath.setFieldURI(UnindexedFieldURIType.CALENDAR_START);
 		JAXBElement<PathToUnindexedFieldType> endFieldURI = of.createFieldURI(endPath);
 		endType.setPath(endFieldURI);
 		FieldURIOrConstantType endConstant = new FieldURIOrConstantType();
@@ -1041,6 +1029,7 @@ public class BaseExchangeRequestFactory {
 		if (null != includeMime) {
 			responseShape.setIncludeMimeContent(includeMime);
 		}
+		//TODO this is wrong ItemResponseShape is only used with FindItem
 		Collection<PathToExtendedFieldType> extendedPropertyPaths = getItemExtendedPropertyPaths();
 		if (!CollectionUtils.isEmpty(extendedPropertyPaths) ) {
 			responseShape.setAdditionalProperties(getArrayOfPathsToElementType(extendedPropertyPaths));
