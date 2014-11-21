@@ -18,8 +18,12 @@
  */
 package com.microsoft.exchange;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
@@ -48,10 +52,10 @@ import org.junit.Test;
 import com.microsoft.exchange.impl.ExchangeEventConverterImpl;
 import com.microsoft.exchange.types.CalendarItemType;
 import com.microsoft.exchange.types.ImportanceChoicesType;
+import com.microsoft.exchange.types.ItemType;
 import com.microsoft.exchange.types.ResponseTypeType;
 import com.microsoft.exchange.types.SensitivityChoicesType;
 
-import edu.emory.mathcs.backport.java.util.Collections;
 
 public class ExchangeEventConverterImplTest {
 	protected final Log log = LogFactory.getLog(this.getClass());
@@ -90,8 +94,9 @@ public class ExchangeEventConverterImplTest {
 	
 	@Test
 	public void convertEmptyCalendarItem(){
-		CalendarItemType calendarItem = new CalendarItemType();
-		Calendar calendar = eventConverter.convertToCalendar(Collections.singleton(calendarItem), null);
+		ItemType calendarItem = new CalendarItemType();
+		Collection<ItemType> calendarItems = Collections.singleton(calendarItem);
+		Calendar calendar = eventConverter.convertToCalendar(calendarItems, "");
 		
 		//calendar should not be null
 		assertNotNull(calendar);

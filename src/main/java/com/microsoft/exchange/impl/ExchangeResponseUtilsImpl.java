@@ -73,6 +73,7 @@ import com.microsoft.exchange.types.ArrayOfResolutionType;
 import com.microsoft.exchange.types.ArrayOfSuggestionDayResult;
 import com.microsoft.exchange.types.ArrayOfTimeZoneDefinitionType;
 import com.microsoft.exchange.types.BaseFolderType;
+import com.microsoft.exchange.types.CalendarItemType;
 import com.microsoft.exchange.types.ContactItemType;
 import com.microsoft.exchange.types.EmailAddressDictionaryEntryType;
 import com.microsoft.exchange.types.EmailAddressDictionaryType;
@@ -443,6 +444,18 @@ public class ExchangeResponseUtilsImpl implements ExchangeResponseUtils  {
 
 		}
 		return calendarItems;
+	}
+	
+	@Override
+	public Set<CalendarItemType> parseFindCalendarItemResponse(FindItemResponse response){
+		Set<CalendarItemType> results = new HashSet<CalendarItemType>();
+		Set<ItemType> parsed = parseFindItemResponse(response);
+		for(ItemType i: parsed){
+			if(i instanceof CalendarItemType){
+				results.add( (CalendarItemType) i );
+			}
+		}
+		return results;
 	}
 	
 	private String parseInnerResponse(JAXBElement<? extends ResponseMessageType> innerResponse) {
