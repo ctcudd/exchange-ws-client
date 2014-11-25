@@ -128,7 +128,7 @@ import com.microsoft.exchange.messages.UpdateItemResponse;
 public class ExchangeWebServicesClient extends WebServiceGatewaySupport implements ExchangeWebServices {
 
 	/**
-	 * This appears as the message of a SoapFault in the event the client encounters throttle policy limits.
+	 * This appears as the message of a SoapFault in the event the client encounters throttle po licy limits.
 	 */
 	protected static final String RETRY_ERROR_MESSAGE = "The server cannot service this request right now. Try again later.";
 	protected static final Log log = LogFactory.getLog(ExchangeWebServicesClient.class);

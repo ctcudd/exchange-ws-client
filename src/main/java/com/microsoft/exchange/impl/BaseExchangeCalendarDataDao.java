@@ -93,7 +93,6 @@ import com.microsoft.exchange.types.FolderIdType;
 import com.microsoft.exchange.types.FolderQueryTraversalType;
 import com.microsoft.exchange.types.ItemIdType;
 import com.microsoft.exchange.types.ItemType;
-import com.microsoft.exchange.types.LegacyFreeBusyType;
 import com.microsoft.exchange.types.MessageType;
 import com.microsoft.exchange.types.NonEmptyArrayOfItemChangesType;
 import com.microsoft.exchange.types.SetItemFieldType;
@@ -256,13 +255,13 @@ public class BaseExchangeCalendarDataDao {
 		return getPrimaryFolder(upn, DistinguishedFolderIdNameType.TASKS);
 	}
 	
-	private List<BaseFolderType> getFoldersByType(String upn, DistinguishedFolderIdNameType parent){
-		List<BaseFolderType> folders = new ArrayList<BaseFolderType>();
+	private Set<BaseFolderType> getFoldersByType(String upn, DistinguishedFolderIdNameType parent){
+		Set<BaseFolderType> folders = new HashSet<BaseFolderType>();
 		BaseFolderType baseFolderType = getPrimaryFolder(upn, parent);
 		if(null != baseFolderType) {
 			folders.add(baseFolderType);
 		}
-		List<BaseFolderType> seondaryFolders = getSeondaryFolders(upn, parent);
+		Set<BaseFolderType> seondaryFolders = getSeondaryFolders(upn, parent);
 		if(!CollectionUtils.isEmpty(seondaryFolders)) {
 			for(BaseFolderType b: seondaryFolders ) {
 				if(baseFolderType.getClass().equals(b.getClass())) {
@@ -279,7 +278,7 @@ public class BaseExchangeCalendarDataDao {
 	 * @param parent
 	 * @return
 	 */
-	private List<BaseFolderType> getSeondaryFolders(String upn, DistinguishedFolderIdNameType parent) {
+	private Set<BaseFolderType> getSeondaryFolders(String upn, DistinguishedFolderIdNameType parent) {
 		Validate.notEmpty(upn, "upn cannnot be empty");
 		setContextCredentials(upn);
 		FindFolder findFolderRequest = getRequestFactory().constructFindFolder(parent, DefaultShapeNamesType.ALL_PROPERTIES, FolderQueryTraversalType.DEEP);
@@ -289,12 +288,12 @@ public class BaseExchangeCalendarDataDao {
 	/*
 	 * return all calendar folders
 	 */
-	public List<BaseFolderType> getAllCalendarFolders(String upn) {
+	public Set<BaseFolderType> getAllCalendarFolders(String upn) {
 		Validate.notEmpty(upn, "upn cannnot be empty");
 		return getFoldersByType(upn, DistinguishedFolderIdNameType.CALENDAR);
 	}
 	
-	public List<BaseFolderType> getAllTaskFolders(String upn) {
+	public Set<BaseFolderType> getAllTaskFolders(String upn) {
 		Validate.notEmpty(upn, "upn cannnot be empty");
 		return getFoldersByType(upn, DistinguishedFolderIdNameType.TASKS);
 	}
@@ -316,7 +315,7 @@ public class BaseExchangeCalendarDataDao {
 
 	public Map<String, String> getCalendarFolderMap(String upn){
 		Map<String, String> calendarsMap = new HashMap<String, String>();
-		List<BaseFolderType> allCalendarFolders = getAllCalendarFolders(upn);
+		Set<BaseFolderType> allCalendarFolders = getAllCalendarFolders(upn);
 		for(BaseFolderType folderType: allCalendarFolders) {
 			String name = folderType.getDisplayName();
 			String id = folderType.getFolderId().getId();
@@ -327,7 +326,7 @@ public class BaseExchangeCalendarDataDao {
 	
 	public Map<String, String> getTaskFolderMap(String upn){
 		Map<String, String> taskFolderMap = new HashMap<String, String>();
-		List<BaseFolderType> allTaskFolders = getAllTaskFolders(upn);
+		Set<BaseFolderType> allTaskFolders = getAllTaskFolders(upn);
 		for(BaseFolderType b : allTaskFolders) {
 			String displayName = b.getDisplayName();
 			String id = b.getFolderId().getId();
@@ -672,19 +671,19 @@ public class BaseExchangeCalendarDataDao {
     //================================================================================
     // ServerTimeZones
     //================================================================================
-	public List<TimeZoneDefinitionType> getServerTimeZones(String tzid, boolean fullTimeZoneData){
+	public Set<TimeZoneDefinitionType> getServerTimeZones(String tzid, boolean fullTimeZoneData){
 		GetServerTimeZones request = getRequestFactory().constructGetServerTimeZones(tzid, fullTimeZoneData);
 		setContextCredentials(getAdminUpn());
 		GetServerTimeZonesResponse response = getWebServices().getServerTimeZones(request);
 		return getResponseUtils().parseGetServerTimeZonesResponse(response);
 	}
 	
-	public List<TimeZoneDefinitionType> getServerTimeZones(boolean fullTimeZoneData){
+	public Set<TimeZoneDefinitionType> getServerTimeZones(boolean fullTimeZoneData){
 		return getServerTimeZones(null,fullTimeZoneData);
 	}
 	
 	public TimeZoneDefinitionType getServerTimeZone(String tzid, boolean fullTimeZoneData){
-		List<TimeZoneDefinitionType> serverTimeZones = getServerTimeZones(tzid,fullTimeZoneData);
+		Set<TimeZoneDefinitionType> serverTimeZones = getServerTimeZones(tzid,fullTimeZoneData);
 		return DataAccessUtils.singleResult(serverTimeZones);
 	}	
 	

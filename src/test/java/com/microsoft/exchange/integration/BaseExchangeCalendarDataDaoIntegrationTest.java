@@ -53,7 +53,6 @@ import com.microsoft.exchange.exception.ExchangeRuntimeException;
 import com.microsoft.exchange.impl.BaseExchangeCalendarDataDao;
 import com.microsoft.exchange.messages.GetServerTimeZones;
 import com.microsoft.exchange.types.BaseFolderType;
-import com.microsoft.exchange.types.BodyType;
 import com.microsoft.exchange.types.BodyTypeType;
 import com.microsoft.exchange.types.CalendarItemType;
 import com.microsoft.exchange.types.DisposalType;
@@ -77,7 +76,7 @@ public class BaseExchangeCalendarDataDaoIntegrationTest {
 	
 	@Before
 	public void setup(){
-		//upn = "blspycha@wisc.edu";
+		//upn = "jscholz@wisc.edu";
 	}
 
 	@Rule
@@ -110,7 +109,7 @@ public class BaseExchangeCalendarDataDaoIntegrationTest {
 	@Test
 	public void getTimeZoneIds(){
 		int validTimeZoneCount = 0;
-		List<TimeZoneDefinitionType> zones = exchangeCalendarDataDao.getServerTimeZones(null, false);
+		Set<TimeZoneDefinitionType> zones = exchangeCalendarDataDao.getServerTimeZones(null, false);
 		log.info("Found "+zones.size() +" exchange time zones.");
 		for(TimeZoneDefinitionType zone: zones){
 			String sysTimeZoneID = TimeZone.getIDForWindowsID(zone.getId(), "US");

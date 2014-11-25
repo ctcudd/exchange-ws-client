@@ -7,7 +7,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
-import java.util.Set;
 
 import javax.xml.bind.JAXBElement;
 import javax.xml.datatype.XMLGregorianCalendar;
@@ -139,6 +138,11 @@ public abstract class BaseExchangeRequestFactory {
 	 */
 	public abstract Collection<PathToExtendedFieldType> getFolderExtendedPropertyPaths();
 
+	/**
+	 * Construct a {@link NonEmptyArrayOfPathsToElementType} given a collection of {@link PathToExtendedFieldType}s
+	 * @param paths
+	 * @return
+	 */
 	private final NonEmptyArrayOfPathsToElementType getArrayOfPathsToElementType(Collection<PathToExtendedFieldType> paths){
 		NonEmptyArrayOfPathsToElementType arrayOfPaths = new NonEmptyArrayOfPathsToElementType();
 		for(PathToExtendedFieldType path : paths){
@@ -147,11 +151,21 @@ public abstract class BaseExchangeRequestFactory {
 		return arrayOfPaths;
 	}
 	
+	/**
+	 * Construct a {@link JAXBElement<PathToExtendedFieldType>} given a {@link ExtendedPropertyType}
+	 * @param extendedPropertyType
+	 * @return
+	 */
 	private final JAXBElement<PathToExtendedFieldType> getJaxbPathToExtendedFieldType(ExtendedPropertyType extendedPropertyType) {
 		PathToExtendedFieldType path = extendedPropertyType.getExtendedFieldURI();
 		return getJaxbPathToExtendedFieldType(path);
 	}
 	
+	/**
+	 * Construct a  {@link JAXBElement<PathToExtendedFieldType>} given a {@link PathToExtendedFieldType}
+	 * @param path
+	 * @return
+	 */
 	private final JAXBElement<PathToExtendedFieldType> getJaxbPathToExtendedFieldType(PathToExtendedFieldType path){
 		return getObjectFactory().createExtendedFieldURI(path);
 	}
@@ -213,6 +227,7 @@ public abstract class BaseExchangeRequestFactory {
 	protected final static DistinguishedFolderIdType getPrimaryJournalDistinguishedFolderId() {
 		return getParentDistinguishedFolderId(DistinguishedFolderIdNameType.JOURNAL);
 	}
+	
 	/**
 	 * Construct a {@link DistinguishedFolderIdType} using the {@link DistinguishedFolderIdNameType} as the id value
 	 * @category FolderId
@@ -439,7 +454,7 @@ public abstract class BaseExchangeRequestFactory {
 		return changes;
 	}
 	/**
-	 * Construct a {@link SetItemFieldType} 
+	 * Construct a {@link SetItemFieldType} which can be used to update a {@link CalendarItemType}s subject field
 	 * @param item
 	 * @return
 	 */
@@ -454,6 +469,11 @@ public abstract class BaseExchangeRequestFactory {
 		return changeDescription;
 	}
 	
+	/**
+	 * Construct a {@link SetItemFieldType} which can be used to update a {@link CalendarItemType}s LegacyFreeBusy field
+	 * @param item
+	 * @return
+	 */
 	public SetItemFieldType constructSetCalendarItemLegacyFreeBusy(CalendarItemType item){
 		CalendarItemType c = new CalendarItemType();
 		c.setLegacyFreeBusyStatus(item.getLegacyFreeBusyStatus());
@@ -465,6 +485,11 @@ public abstract class BaseExchangeRequestFactory {
 		return changeDescription;
 	}
 	
+	/**
+	 * Construct a {@link SetItemFieldType} which can be used to update a {@link CalendarItemType}s RequiredAttendees field
+	 * @param item
+	 * @return
+	 */
 	public SetItemFieldType constructSetCalendarItemRequiredAttendees(CalendarItemType item){
 		CalendarItemType c = new CalendarItemType();
 		c.setRequiredAttendees(item.getRequiredAttendees());
@@ -476,6 +501,12 @@ public abstract class BaseExchangeRequestFactory {
 		return changeDescription;
 	}
 	
+	/**
+	 * Construct {@link SetItemFieldType} which can be used to update a {@link CalendarItemType}s {@link ExtendedPropertyType}
+	 * @param item
+	 * @param exprop
+	 * @return
+	 */
 	public SetItemFieldType constructSetCalendarItemExtendedProperty(CalendarItemType item, ExtendedPropertyType exprop){
 		CalendarItemType c = new CalendarItemType();
 		c.getExtendedProperties().add(exprop);
@@ -529,8 +560,8 @@ public abstract class BaseExchangeRequestFactory {
 	/**
 	 * Constructs a {@link FindItem} request using a {@link CalendarViewType}.  
 	 * The maximum number of events returned will be limited by {@link ExchangeRequestFactory#getMaxFindItems()}
-	 * A FindItem operation using this request will result in recurrence being expanded by the exchange server, you simply get a list of events (single events & instances of recurring events) as they would appear in the users calendar.  
-	 * A FindItem operation using a {@link CalendarViewType} does not support paging, use an {@link IndexedPageViewType} if you need paging.
+	 * A FindItem operation using this request will result in recurrence being expanded by the exchange server, you simply get a list of events (single events & instances of recurring events, NO recurring masters) as they would appear in the users calendar.  
+	 * A FindItem operation using a {@link CalendarViewType} does not support paging, use an {@link IndexedPageViewType} if you need paging/sorting.
 	 * SearchRestrictions and SortOrders are not valid when using a FindItem operation using a {@link CalendarViewType}
 	 * @see http://msdn.microsoft.com/en-us/library/aa564515(v=exchg.140).aspx
 	 * @param startTime
@@ -549,6 +580,14 @@ public abstract class BaseExchangeRequestFactory {
 		return findItem;
 	}
 	
+	/**
+	 * Construct a {@link FindItem} request which will perform a {@link ItemQueryTraversalType#SHALLOW} (non-recursive) search of the given {@link BaseFolderIdType}s.
+	 * This method uses {@link CalendarViewType}, which does not support paging/sorting but expands recurrence for you.
+	 * @param startTime
+	 * @param endTime
+	 * @param folderIds
+	 * @return
+	 */
 	protected FindItem constructCalendarViewFindItemIdsByDateRange(Date startTime, Date endTime, Collection<? extends BaseFolderIdType> folderIds) {
 		NonEmptyArrayOfBaseFolderIdsType arrayOfFolderIds = new NonEmptyArrayOfBaseFolderIdsType();
 		arrayOfFolderIds.getFolderIdsAndDistinguishedFolderIds().addAll(folderIds);
@@ -574,6 +613,7 @@ public abstract class BaseExchangeRequestFactory {
 	protected FindItem constructIndexedPageViewFindFirstItemIdsShallow(RestrictionType restriction, Collection<? extends BaseFolderIdType> folderIds) {
 		return constructIndexedPageViewFindItemIdsShallow(INIT_BASE_OFFSET, getMaxFindItems(), restriction, folderIds);
 	}
+
 	/**
 	 * Constructs a {@link FindItem} request using an {@link IndexedPageViewType} (recurrence will not be expanded)
 	 * This method performs a Shallow search and will not search sub folders 
@@ -588,6 +628,16 @@ public abstract class BaseExchangeRequestFactory {
 		return constructIndexedPageViewFindItem(offset, maxItems, DefaultShapeNamesType.ID_ONLY, ItemQueryTraversalType.SHALLOW, restriction, folderIds);
 	}
 	
+	/**
+	 * Constructs a {@link FindItem} request using an {@link IndexedPageViewType} (recurrence will not be expanded)
+	 * This method performs a Shallow search and will not search sub folders 
+	 * This method will return ITEMID only
+	 * @param offset
+	 * @param maxItems
+	 * @param restriction
+	 * @param folderIds
+	 * @return
+	 */	
 	private FindItem constructIndexedPageViewFindItem(int offset, int maxItems, DefaultShapeNamesType baseShape, ItemQueryTraversalType traversalType, RestrictionType restriction, Collection<? extends BaseFolderIdType> folderIds) {
 		if(maxItems > EWS_FIND_ITEM_MAX){
 			log.warn("The default policy in Exchange limits the page size to 1000 items. Setting the page size to a value that is greater than this number has no practical effect. --http://msdn.microsoft.com/en-us/library/office/jj945066(v=exchg.150).aspx#bk_PolicyParameters");
@@ -650,6 +700,15 @@ public abstract class BaseExchangeRequestFactory {
 	//================================================================================
     // DeleteItem
     //================================================================================	
+	/**
+	 * Construct a {@link DeleteItem} request
+	 * 
+	 * @param arrayOfItemIds
+	 * @param disposalType
+	 * @param sendTo
+	 * @param affectedTaskOccurrencesType
+	 * @return
+	 */
 	private final  DeleteItem constructDeleteItemInternal(
 			NonEmptyArrayOfBaseItemIdsType arrayOfItemIds,
 			DisposalType disposalType,
@@ -667,6 +726,14 @@ public abstract class BaseExchangeRequestFactory {
 		return deleteItem;
 	}
 	
+	/**
+	 * Construct a {@link DeleteItem} request which will trigger the deletiion of the items specifiefied by {@code itemIds}
+	 * @param itemIds
+	 * @param disposalType
+	 * @param sendTo
+	 * @param affectedTaskOccurrencesType
+	 * @return
+	 */
 	protected DeleteItem constructDeleteItem(
 			Collection<? extends BaseItemIdType> itemIds,
 			DisposalType disposalType,
@@ -763,6 +830,14 @@ public abstract class BaseExchangeRequestFactory {
 	//================================================================================
     // FindFolder
     //================================================================================	
+	/**
+	 * Construct a {@link FindFolder} request
+	 * @param parent
+	 * @param folderShape
+	 * @param folderQueryTraversalType
+	 * @param restriction
+	 * @return
+	 */
 	protected final FindFolder constructFindFolderInternal(DistinguishedFolderIdNameType parent,
 			DefaultShapeNamesType folderShape,
 			FolderQueryTraversalType folderQueryTraversalType,
@@ -792,12 +867,25 @@ public abstract class BaseExchangeRequestFactory {
 	//================================================================================
     // UpdateFolder
     //================================================================================	
+	/**
+	 * 
+	 * @param folderId
+	 * @param exProp
+	 * @return
+	 */
 	protected UpdateFolder constructUpdateFolderDeleteExtendedProperty(
 			FolderIdType folderId, ExtendedPropertyType exProp) {
 		return constructUpdateFolderDeleteField(
 				getJaxbPathToExtendedFieldType(exProp), folderId);
 	}
 
+	/**
+	 * 
+	 * @param folder
+	 * @param path
+	 * @param folderId
+	 * @return
+	 */
 	protected UpdateFolder constructUpdateFolderSetField(FolderType folder,
 			JAXBElement<? extends BasePathToElementType> path,
 			FolderIdType folderId) {
@@ -807,6 +895,12 @@ public abstract class BaseExchangeRequestFactory {
 		return constructUpdateFolderInternal(changeDescription, folderId);
 	}
 
+	/**
+	 * 
+	 * @param path
+	 * @param folderId
+	 * @return
+	 */
 	protected UpdateFolder constructUpdateFolderDeleteField(
 			JAXBElement<? extends BasePathToElementType> path,
 			FolderIdType folderId) {
@@ -815,6 +909,11 @@ public abstract class BaseExchangeRequestFactory {
 		return constructUpdateFolderInternal(changeDescription, folderId);
 	}
 
+	/**
+	 * @param changeDescription
+	 * @param folderId
+	 * @return
+	 */
 	private UpdateFolder constructUpdateFolderInternal(
 			FolderChangeDescriptionType changeDescription, FolderIdType folderId) {
 
@@ -1029,7 +1128,7 @@ public abstract class BaseExchangeRequestFactory {
 		if (null != includeMime) {
 			responseShape.setIncludeMimeContent(includeMime);
 		}
-		//TODO this is wrong ItemResponseShape is only used with FindItem
+		//TODO this is wrong ItemResponseShape is only used with FindItem.  Should a findItem request return the extendedProperties identified by getItemExtendedPropertyPaths()?
 		Collection<PathToExtendedFieldType> extendedPropertyPaths = getItemExtendedPropertyPaths();
 		if (!CollectionUtils.isEmpty(extendedPropertyPaths) ) {
 			responseShape.setAdditionalProperties(getArrayOfPathsToElementType(extendedPropertyPaths));
