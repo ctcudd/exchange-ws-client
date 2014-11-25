@@ -140,12 +140,14 @@ public abstract class AbstractIntegrationTest {
 	protected ExchangeResponseUtils responseUtils = new ExchangeResponseUtilsImpl();
 	protected ExchangeRequestFactory requestFactory = new ExchangeRequestFactory();
 	
-	@Value("${integrationtest.email}")
+	@Value("${integration.email}")
 	protected String emailAddress = "someemailaddress@on.yourexchangeserver.edu";
-	@Value("${integrationtest.startDate}")
-	protected String startDate = "2012-10-11";
-	@Value("${integrationtest.endDate}")
-	protected String endDate = "2014-10-12";
+	
+	@Value("${integrationtest.startDate:2012-01-01}")
+	protected String startDate;
+	
+	@Value("${integrationtest.endDate:2014-01-01}")
+	protected String endDate;
 	
 	/**
 	 * This method gets called at the beginning of each integration test method.

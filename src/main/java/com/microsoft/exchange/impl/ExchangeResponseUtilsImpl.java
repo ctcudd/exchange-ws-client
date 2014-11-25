@@ -85,7 +85,6 @@ import com.microsoft.exchange.types.ItemIdType;
 import com.microsoft.exchange.types.ItemType;
 import com.microsoft.exchange.types.ResolutionType;
 import com.microsoft.exchange.types.ResponseClassType;
-import com.microsoft.exchange.types.SuggestionDayResult;
 import com.microsoft.exchange.types.TimeZoneDefinitionType;
 
 
@@ -292,7 +291,8 @@ public class ExchangeResponseUtilsImpl implements ExchangeResponseUtils  {
 	 * @see com.microsoft.exchange.ExchangeResponseUtils#parseFindFolderResponse(com.microsoft.exchange.messages.FindFolderResponse)
 	 */
 	@Override
-	public  List<BaseFolderType> parseFindFolderResponse(FindFolderResponse findFolderResponse) {
+	public  Set<BaseFolderType> parseFindFolderResponse(FindFolderResponse findFolderResponse) {
+		Set<BaseFolderType> results = new HashSet<BaseFolderType>();
 		ArrayOfResponseMessagesType findFolderResponseMessages = findFolderResponse.getResponseMessages();
 		List<JAXBElement<? extends ResponseMessageType>> folderItemResponseMessages = findFolderResponseMessages.getCreateItemResponseMessagesAndDeleteItemResponseMessagesAndGetItemResponseMessages();
 		for(JAXBElement<? extends ResponseMessageType> responseElement: folderItemResponseMessages) {
@@ -300,10 +300,10 @@ public class ExchangeResponseUtilsImpl implements ExchangeResponseUtils  {
 			if(null != itemType && null != itemType.getRootFolder() && null != itemType.getRootFolder().getFolders() && null != itemType.getRootFolder().getFolders().getFoldersAndCalendarFoldersAndContactsFolders()) {
 				FindFolderParentType rootFolder = itemType.getRootFolder();
 				ArrayOfFoldersType folders = rootFolder.getFolders();
-				return folders.getFoldersAndCalendarFoldersAndContactsFolders();
+				results.addAll(folders.getFoldersAndCalendarFoldersAndContactsFolders());
 			}
 		}
-		return null;
+		return results;
 	}
 
 	/* (non-Javadoc)
@@ -362,9 +362,9 @@ public class ExchangeResponseUtilsImpl implements ExchangeResponseUtils  {
 	 * @see com.microsoft.exchange.ExchangeResponseUtils#parseCreateItemResponse(com.microsoft.exchange.messages.CreateItemResponse)
 	 */
 	@Override
-	public  List<ItemIdType> parseCreateItemResponse(CreateItemResponse response) {
+	public  Set<ItemIdType> parseCreateItemResponse(CreateItemResponse response) {
 		confirmSuccess(response);
-		List<ItemIdType> itemIds = new ArrayList<ItemIdType>();
+		Set<ItemIdType> itemIds = new HashSet<ItemIdType>();
 		ArrayOfResponseMessagesType responseMessages = response.getResponseMessages();
 		List<JAXBElement<? extends ResponseMessageType>> createItemResponseMessages = responseMessages.getCreateItemResponseMessagesAndDeleteItemResponseMessagesAndGetItemResponseMessages();
 		for(JAXBElement<? extends ResponseMessageType> responeElement : createItemResponseMessages) {
@@ -568,8 +568,8 @@ public class ExchangeResponseUtilsImpl implements ExchangeResponseUtils  {
 	 * @see com.microsoft.exchange.ExchangeResponseUtils#parseGetServerTimeZonesResponse(com.microsoft.exchange.messages.GetServerTimeZonesResponse)
 	 */
 	@Override
-	public List<TimeZoneDefinitionType> parseGetServerTimeZonesResponse(GetServerTimeZonesResponse response){
-		List<TimeZoneDefinitionType> zones = new ArrayList<TimeZoneDefinitionType>();
+	public Set<TimeZoneDefinitionType> parseGetServerTimeZonesResponse(GetServerTimeZonesResponse response){
+		Set<TimeZoneDefinitionType> zones = new HashSet<TimeZoneDefinitionType>();
 		if(confirmSuccess(response)){
 			ArrayOfResponseMessagesType responseMessages = response.getResponseMessages();
 			List<JAXBElement<? extends ResponseMessageType>> tzResponseMessages = responseMessages.getCreateItemResponseMessagesAndDeleteItemResponseMessagesAndGetItemResponseMessages();
@@ -578,7 +578,7 @@ public class ExchangeResponseUtilsImpl implements ExchangeResponseUtils  {
 				GetServerTimeZonesResponseMessageType itemInfo = (GetServerTimeZonesResponseMessageType) r;
 				ArrayOfTimeZoneDefinitionType timeZoneDefinitions = itemInfo.getTimeZoneDefinitions();
 				List<TimeZoneDefinitionType> timeZoneDefinitionsList = timeZoneDefinitions.getTimeZoneDefinitions();
-				zones = timeZoneDefinitionsList;
+				zones.addAll(timeZoneDefinitionsList);
 			}
 		}
 		return zones;

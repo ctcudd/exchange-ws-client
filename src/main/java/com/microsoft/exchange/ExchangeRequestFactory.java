@@ -454,6 +454,21 @@ public class ExchangeRequestFactory extends BaseExchangeRequestFactory{
 			FolderIdType folderId) {
 		return constructCreateCalendarItemInternal(calendarItems, sendTo, folderId);
 	}
+	
+	/**
+	 * Constructs a {@link CreateItem} request specific for creating
+	 * {@link CalendarItemType} objects, within the default calendarFolder and
+	 * using {@link ExchangeRequestFactory#getDefaultCalendarCreateSendTo()}
+	 * 
+	 * @category CreateItem CalendarItem
+	 * 
+	 * @param calendarItems
+	 * @return
+	 */
+	public CreateItem constructCreateCalendarItem(
+			Collection<CalendarItemType> calendarItems) {
+		return constructCreateCalendarItemInternal(calendarItems, null, null);
+	}
 
 	/**
 	 * Constructs a {@link CreateItem} request specific for creating {@link TaskType} objects
@@ -467,6 +482,12 @@ public class ExchangeRequestFactory extends BaseExchangeRequestFactory{
 		return constructCreateTaskItem(taskItems, null, folderId);
 	}
 	
+	/**
+	 * Constructs a {link CreateItem} request specific for creating {@link MessageType}s (i.e. Email messages)
+	 * @param messageItems
+	 * @param folderId
+	 * @return {@link CreateItem}
+	 */
 	public CreateItem constructCreateMessageItem(Collection<MessageType> messageItems, FolderIdType folderId){
 		return constructCreateMessageItemInternal(messageItems, folderId);
 	}
@@ -587,6 +608,13 @@ public class ExchangeRequestFactory extends BaseExchangeRequestFactory{
 		return constructDeleteItem(itemIds, disposalType, sendTo, null);
 	}
 
+	/**
+	 * Constructs a {@link DeleteItem} request specific for deleting a {@link CalendarItemType}
+	 * @param itemId
+	 * @param disposalType
+	 * @param sendTo
+	 * @return
+	 */
 	public DeleteItem constructDeleteCalendarItem(BaseItemIdType itemId,
 			DisposalType disposalType,
 			CalendarItemCreateOrDeleteOperationType sendTo) {
@@ -594,6 +622,13 @@ public class ExchangeRequestFactory extends BaseExchangeRequestFactory{
 				disposalType, sendTo);
 	}
 
+	/**
+	 * Construct a {@link DeleteItem} request specific for deleting a {@link TaskType} 
+	 * @param itemIds
+	 * @param disposalType
+	 * @param affectedTaskOccurrencesType
+	 * @return
+	 */
 	public DeleteItem constructDeleteTaskItems(
 			Collection<? extends BaseItemIdType> itemIds,
 			DisposalType disposalType,
@@ -603,6 +638,7 @@ public class ExchangeRequestFactory extends BaseExchangeRequestFactory{
 		return constructDeleteItem(itemIds, disposalType, null,
 				affectedTaskOccurrencesType);
 	}
+	
 	//================================================================================
     // FindItem
     //================================================================================	
