@@ -163,7 +163,7 @@ public abstract class AbstractIntegrationTest {
 		FindFolderResponse response = ewsClient.findFolder(request);
 		assertNotNull(response);
 		
-		List<BaseFolderType> foundFolders = responseUtils.parseFindFolderResponse(response);
+		Set<BaseFolderType> foundFolders = responseUtils.parseFindFolderResponse(response);
 		
 		for(BaseFolderType folder: foundFolders ) {
 			log.info(folder.getDisplayName());
