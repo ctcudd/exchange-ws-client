@@ -61,6 +61,7 @@ import com.microsoft.exchange.types.IndexBasePointType;
 import com.microsoft.exchange.types.IndexedPageViewType;
 import com.microsoft.exchange.types.IsGreaterThanOrEqualToType;
 import com.microsoft.exchange.types.IsLessThanOrEqualToType;
+import com.microsoft.exchange.types.IsLessThanType;
 import com.microsoft.exchange.types.ItemChangeType;
 import com.microsoft.exchange.types.ItemIdType;
 import com.microsoft.exchange.types.ItemQueryTraversalType;
@@ -1022,6 +1023,9 @@ public abstract class BaseExchangeRequestFactory {
 	/**
 	 * Construct a {@link RestrictionType} object for use with a {@link FindItem} using a {@link IndexedPageViewType}.  
 	 * {@link RestrictionType} cannot be used with {@link CalendarViewType}.
+	 * 
+	 * https://tools.ietf.org/html/rfc4791#section-9.9
+	 * 
 	 * @param startTime
 	 * @param endTime
 	 * @return a {@link RestrictionType} which targets {@link CalendarItemType} betweem {@code startTime} and {@code endTime}
@@ -1030,7 +1034,7 @@ public abstract class BaseExchangeRequestFactory {
 		ObjectFactory of = getObjectFactory();
 		JAXBElement<IsGreaterThanOrEqualToType> startSearchExpression = getCalendarItemStartSearchExpression(startTime);
 		
-		JAXBElement<IsLessThanOrEqualToType> endSearchExpression = getCalendarItemEndSearchExpression( endTime);
+		JAXBElement<IsLessThanType> endSearchExpression = getCalendarItemEndSearchExpression( endTime);
 		
 		//and them all together
 		AndType andType = new AndType();
@@ -1045,13 +1049,13 @@ public abstract class BaseExchangeRequestFactory {
 	}
 	
 	/**
-	 * Construct a search expression for finding calendar itmems ON or BEFORE the specified {@code endTime}
+	 * Construct a search expression for finding calendar itmems that start BEFORE the specified {@code endTime}
 	 * @param endTime
 	 * @return {@link JAXBElement<IsLessThanOrEqualToType>}
 	 */
-	protected final JAXBElement<IsLessThanOrEqualToType> getCalendarItemEndSearchExpression(Date endTime) {
+	protected final JAXBElement<IsLessThanType> getCalendarItemEndSearchExpression(Date endTime) {
 		ObjectFactory of = getObjectFactory();
-		IsLessThanOrEqualToType endType = new IsLessThanOrEqualToType();
+		IsLessThanType endType = new IsLessThanType();
 		XMLGregorianCalendar end = ExchangeDateUtils.convertDateToXMLGregorianCalendar(endTime);
 		PathToUnindexedFieldType endPath = new PathToUnindexedFieldType();
 		//endPath.setFieldURI(UnindexedFieldURIType.CALENDAR_END);
@@ -1063,7 +1067,7 @@ public abstract class BaseExchangeRequestFactory {
 		endValue.setValue(end.toXMLFormat());
 		endConstant.setConstant(endValue);
 		endType.setFieldURIOrConstant(endConstant);
-		JAXBElement<IsLessThanOrEqualToType> endSearchExpression = of.createIsLessThanOrEqualTo(endType);
+		JAXBElement<IsLessThanType> endSearchExpression = of.createIsLessThan(endType);
 		return endSearchExpression;
 	}
 	

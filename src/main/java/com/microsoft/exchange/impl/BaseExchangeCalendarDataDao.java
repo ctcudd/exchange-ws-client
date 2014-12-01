@@ -567,7 +567,7 @@ public class BaseExchangeCalendarDataDao {
 			
 			try {
 				CreateItemResponse response = getWebServices().createItem(request);
-				List<ItemIdType> createdCalendarItems = getResponseUtils().parseCreateItemResponse(response);
+				Set<ItemIdType> createdCalendarItems = getResponseUtils().parseCreateItemResponse(response);
 				return DataAccessUtils.singleResult(createdCalendarItems);
 			}catch(ExchangeWebServicesRuntimeException e) {
 				long backoff = getWaitTimeExp(newDepth);
@@ -822,12 +822,8 @@ public class BaseExchangeCalendarDataDao {
 		setContextCredentials(getAdminUpn());
 		CreateItem request = getRequestFactory().constructCreateMessageItem(messages, folderIdType);
 		CreateItemResponse response = getWebServices().createItem(request);
-		ItemIdType itemId = null;
-		List<ItemIdType> items = getResponseUtils().parseCreateItemResponse(response);
-		if(!CollectionUtils.isEmpty(items) && null != items.get(0)) {
-			itemId=items.get(0);
-		}
-		return itemId;
+		Set<ItemIdType> items = getResponseUtils().parseCreateItemResponse(response);
+		return DataAccessUtils.singleResult(items);
 	}
 	
 	public boolean updateCalendarItemSetLegacyFreeBusy(String upn, CalendarItemType c){
