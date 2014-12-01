@@ -41,6 +41,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import com.microsoft.exchange.ExchangeDateUtils;
+import com.microsoft.exchange.config.ImpersonationConfig;
 import com.microsoft.exchange.exception.ExchangeRuntimeException;
 import com.microsoft.exchange.impl.BaseExchangeCalendarDataDao;
 import com.microsoft.exchange.impl.ThreadLocalImpersonationConnectingSIDSourceImpl;
@@ -59,7 +60,8 @@ import com.microsoft.exchange.types.ItemIdType;
  * @author Nicholas Blair
  */
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations= {"classpath:test-contexts/exchangeContext.xml"})
+//@ContextConfiguration(locations= {"classpath:test-contexts/exchangeContext.xml"})
+@ContextConfiguration(classes=ImpersonationConfig.class)
 public class ImpersonationClientConcurrencyTest extends AbstractIntegrationTest {
 
 	@Autowired
@@ -143,7 +145,7 @@ public class ImpersonationClientConcurrencyTest extends AbstractIntegrationTest 
 								Set<ItemIdType> parsed = new HashSet<ItemIdType>();
 								try{
 									CreateItemResponse response = ewsClient.createItem(request);
-									parsed = responseUtils.parseCreateItemResponse(response);
+									parsed = responseUtils.getCreatedItemIds(response);
 									createdItemIds.addAll(parsed);
 								}catch(ExchangeRuntimeException e){
 									log.error(e.getMessage());
@@ -174,13 +176,14 @@ public class ImpersonationClientConcurrencyTest extends AbstractIntegrationTest 
 		//delete createdItemIds
 		StopWatch time = new StopWatch();
 		time.start();
-		boolean deleteSuccess = exchangeCalendarDataDao.deleteCalendarItems(emailAddress, createdItemIds);
+		
+		//boolean deleteSuccess = exchangeCalendarDataDao.deleteCalendarItems(emailAddress, createdItemIds);
+		boolean deleteSuccess = exchangeCalendarDataDao.deleteCalendarItemsWithRetry(emailAddress, createdItemIds);
 		time.stop();
 		log.info((deleteSuccess ? "Successfully deleted ": "Failed to delete ")+actualCount+" created calendar items in "+time);
 		
 		//items in should equal items out
 		Assert.assertEquals(expectedCount, actualCount);
-
 	}
 	
 	/**

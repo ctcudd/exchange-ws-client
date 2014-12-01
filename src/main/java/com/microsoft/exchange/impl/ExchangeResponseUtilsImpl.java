@@ -347,7 +347,7 @@ public class ExchangeResponseUtilsImpl implements ExchangeResponseUtils  {
 					successfulItems.add(itemType.getItemId());
 				}
 			}else {
-				log.trace("Failed to create item, "+err);
+				log.warn("CreateItem failure: "+err);
 			}
 		}
 		return successfulItems;

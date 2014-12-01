@@ -53,6 +53,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import com.ibm.icu.util.TimeZone;
+import com.microsoft.exchange.config.TestConfig;
 import com.microsoft.exchange.exception.ExchangeRuntimeException;
 import com.microsoft.exchange.impl.BaseExchangeCalendarDataDao;
 import com.microsoft.exchange.messages.FindItem;
@@ -60,26 +61,24 @@ import com.microsoft.exchange.messages.FindItemResponse;
 import com.microsoft.exchange.messages.GetServerTimeZones;
 import com.microsoft.exchange.types.BaseFolderType;
 import com.microsoft.exchange.types.BodyTypeType;
-import com.microsoft.exchange.types.CalendarFolderType;
 import com.microsoft.exchange.types.CalendarItemType;
-import com.microsoft.exchange.types.CalendarItemTypeType;
 import com.microsoft.exchange.types.FolderIdType;
 import com.microsoft.exchange.types.ItemIdType;
 import com.microsoft.exchange.types.TimeZoneDefinitionType;
 
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations= {"classpath:test-contexts/exchangeContext.xml"})
+@ContextConfiguration(classes=TestConfig.class)
 public class BaseExchangeCalendarDataDaoIntegrationTest {
 	protected final Log log = LogFactory.getLog(this.getClass());
 
 	String username = "someusername";
 	
 	@Value("${integration.email:someemailaddress@on.yourexchangeserver.edu}")
-	protected String upn;
+	String upn;
 	
 	@Autowired
-	protected BaseExchangeCalendarDataDao exchangeCalendarDataDao;
+	BaseExchangeCalendarDataDao exchangeCalendarDataDao;
 	
 	@Before
 	public void setup(){
@@ -92,6 +91,7 @@ public class BaseExchangeCalendarDataDaoIntegrationTest {
 	@Test
 	public void isAutowired() {
 		assertNotNull(exchangeCalendarDataDao);
+		assertNotNull(exchangeCalendarDataDao.getWebServices());
 		assertNotNull(upn);
 	}
 	

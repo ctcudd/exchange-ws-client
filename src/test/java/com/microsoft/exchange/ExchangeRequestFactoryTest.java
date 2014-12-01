@@ -1,9 +1,4 @@
-/**
- * 
- */
 package com.microsoft.exchange;
-
-
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -937,9 +932,7 @@ public class ExchangeRequestFactoryTest extends ExchangeRequestFactoryUtils{
 
 	}
 	
-	/**
-	 * Test for {@link ExchangeRequestFactory#constructSetCalendarItemLegacyFreeBusy(CalendarItemType)}
-	 */
+	
 	@Test
 	public void constructSetCalendarItemLegacyFreeBusy(){
 		CalendarItemType c = new CalendarItemType();

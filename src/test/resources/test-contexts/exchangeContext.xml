@@ -9,6 +9,6 @@
 <!-- <import resource="classpath:/com/microsoft/exchange/exchangeContext-usingNtlmCredentials.xml"/> -->
 <!-- <import resource="classpath:/com/microsoft/exchange/exchangeContext-ntlm-impersonation.xml"/> -->
 
-<bean id="exchangeCalendarDataDao"	class="com.microsoft.exchange.impl.BaseExchangeCalendarDataDao" />			
+	<bean id="exchangeCalendarDataDao"	class="com.microsoft.exchange.impl.BaseExchangeCalendarDataDao" />			
 
 </beans>

@@ -42,6 +42,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.support.DataAccessUtils;
+import org.springframework.retry.annotation.Retryable;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import com.microsoft.exchange.ExchangeDateUtils;
@@ -51,6 +54,7 @@ import com.microsoft.exchange.ExchangeWebServices;
 import com.microsoft.exchange.exception.ExchangeExceededFindCountLimitRuntimeException;
 import com.microsoft.exchange.exception.ExchangeInvalidUPNRuntimeException;
 import com.microsoft.exchange.exception.ExchangeRuntimeException;
+import com.microsoft.exchange.exception.ExchangeWebServicesRuntimeException;
 import com.microsoft.exchange.messages.CreateFolder;
 import com.microsoft.exchange.messages.CreateFolderResponse;
 import com.microsoft.exchange.messages.CreateItem;
@@ -111,6 +115,7 @@ import com.microsoft.exchange.types.TimeZoneDefinitionType;
  * 
  * @author Collin Cudd
  */
+@Service
 public class BaseExchangeCalendarDataDao {
 
     //================================================================================
@@ -863,7 +868,6 @@ public class BaseExchangeCalendarDataDao {
 			}
 		}
 	}
-	
 	/**
 	 * Delete {@link CalendarItemType}s for the user.
 	 * @param upn - the userPrincipalName identifies the user to delete {@link CalendarItemType}s for.
@@ -872,6 +876,15 @@ public class BaseExchangeCalendarDataDao {
 	 * @see ExchangeRequestFactory#constructDeleteCalendarItems(Collection, DisposalType, CalendarItemCreateOrDeleteOperationType)
 	 * @return
 	 */
+	@Retryable(maxAttempts=10, include=ExchangeWebServicesRuntimeException.class, backoff=@Backoff(delay=100, multiplier=2, random=true))
+	public boolean deleteCalendarItemsWithRetry(String upn, Collection<ItemIdType> itemIds){
+		setContextCredentials(upn);
+		DeleteItem request = getRequestFactory().constructDeleteCalendarItems(itemIds);
+		DeleteItemResponse response = getWebServices().deleteItem(request);
+		boolean success = getResponseUtils().confirmSuccess(response);
+		return success;
+	}
+	
 	public boolean deleteCalendarItems(String upn, Collection<ItemIdType> itemIds) {
 		return deleteCalendarItemsInternal(upn, itemIds,0);
 	}
