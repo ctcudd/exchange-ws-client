@@ -18,21 +18,13 @@
  */
 package com.microsoft.exchange;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
-import javax.xml.bind.JAXBElement;
-import javax.xml.datatype.XMLGregorianCalendar;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.Validate;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.springframework.util.CollectionUtils;
 
 import com.microsoft.exchange.messages.CreateFolder;
@@ -51,149 +43,142 @@ import com.microsoft.exchange.messages.ResolveNames;
 import com.microsoft.exchange.messages.UpdateFolder;
 import com.microsoft.exchange.types.AcceptItemType;
 import com.microsoft.exchange.types.AffectedTaskOccurrencesType;
-import com.microsoft.exchange.types.AndType;
 import com.microsoft.exchange.types.ArrayOfCalendarPermissionsType;
 import com.microsoft.exchange.types.ArrayOfMailboxData;
 import com.microsoft.exchange.types.BaseFolderIdType;
-import com.microsoft.exchange.types.BaseFolderType;
 import com.microsoft.exchange.types.BaseItemIdType;
-import com.microsoft.exchange.types.BasePathToElementType;
-import com.microsoft.exchange.types.BodyTypeResponseType;
 import com.microsoft.exchange.types.CalendarFolderType;
 import com.microsoft.exchange.types.CalendarItemCreateOrDeleteOperationType;
+import com.microsoft.exchange.types.CalendarItemType;
 import com.microsoft.exchange.types.CalendarPermissionLevelType;
 import com.microsoft.exchange.types.CalendarPermissionReadAccessType;
 import com.microsoft.exchange.types.CalendarPermissionSetType;
 import com.microsoft.exchange.types.CalendarPermissionType;
 import com.microsoft.exchange.types.CalendarViewType;
-import com.microsoft.exchange.types.ConstantValueType;
+import com.microsoft.exchange.types.DeclineItemType;
 import com.microsoft.exchange.types.DefaultShapeNamesType;
-import com.microsoft.exchange.types.DeleteFolderFieldType;
 import com.microsoft.exchange.types.DisposalType;
 import com.microsoft.exchange.types.DistinguishedFolderIdNameType;
 import com.microsoft.exchange.types.DistinguishedFolderIdType;
 import com.microsoft.exchange.types.ExtendedPropertyType;
-import com.microsoft.exchange.types.FieldOrderType;
-import com.microsoft.exchange.types.FieldURIOrConstantType;
-import com.microsoft.exchange.types.FolderChangeDescriptionType;
-import com.microsoft.exchange.types.FolderChangeType;
 import com.microsoft.exchange.types.FolderIdType;
 import com.microsoft.exchange.types.FolderQueryTraversalType;
-import com.microsoft.exchange.types.FolderResponseShapeType;
 import com.microsoft.exchange.types.FolderType;
 import com.microsoft.exchange.types.FreeBusyViewOptions;
-import com.microsoft.exchange.types.IndexBasePointType;
 import com.microsoft.exchange.types.IndexedPageViewType;
-import com.microsoft.exchange.types.IsGreaterThanOrEqualToType;
-import com.microsoft.exchange.types.IsLessThanOrEqualToType;
 import com.microsoft.exchange.types.ItemIdType;
-import com.microsoft.exchange.types.ItemQueryTraversalType;
-import com.microsoft.exchange.types.ItemResponseShapeType;
-import com.microsoft.exchange.types.ItemType;
 import com.microsoft.exchange.types.MailboxData;
 import com.microsoft.exchange.types.MessageDispositionType;
+import com.microsoft.exchange.types.MessageType;
 import com.microsoft.exchange.types.NonEmptyArrayOfAllItemsType;
 import com.microsoft.exchange.types.NonEmptyArrayOfBaseFolderIdsType;
-import com.microsoft.exchange.types.NonEmptyArrayOfBaseItemIdsType;
-import com.microsoft.exchange.types.NonEmptyArrayOfFieldOrdersType;
-import com.microsoft.exchange.types.NonEmptyArrayOfFolderChangeDescriptionsType;
-import com.microsoft.exchange.types.NonEmptyArrayOfFolderChangesType;
 import com.microsoft.exchange.types.NonEmptyArrayOfFoldersType;
-import com.microsoft.exchange.types.NonEmptyArrayOfPathsToElementType;
+import com.microsoft.exchange.types.NonEmptyArrayOfTimeZoneIdType;
 import com.microsoft.exchange.types.ObjectFactory;
 import com.microsoft.exchange.types.PathToExtendedFieldType;
 import com.microsoft.exchange.types.PathToUnindexedFieldType;
 import com.microsoft.exchange.types.PermissionActionType;
 import com.microsoft.exchange.types.ResolveNamesSearchScopeType;
+import com.microsoft.exchange.types.ResponseTypeType;
 import com.microsoft.exchange.types.RestrictionType;
 import com.microsoft.exchange.types.SearchFolderTraversalType;
 import com.microsoft.exchange.types.SearchFolderType;
 import com.microsoft.exchange.types.SearchParametersType;
-import com.microsoft.exchange.types.SetFolderFieldType;
-import com.microsoft.exchange.types.SortDirectionType;
 import com.microsoft.exchange.types.SuggestionsViewOptions;
-import com.microsoft.exchange.types.TargetFolderIdType;
+import com.microsoft.exchange.types.TaskType;
 import com.microsoft.exchange.types.TasksFolderType;
+import com.microsoft.exchange.types.TentativelyAcceptItemType;
 import com.microsoft.exchange.types.TimeZone;
 import com.microsoft.exchange.types.UnindexedFieldURIType;
 import com.microsoft.exchange.types.UserConfigurationNameType;
 import com.microsoft.exchange.types.UserIdType;
+import com.microsoft.exchange.types.WellKnownResponseObjectType;
 
-public class ExchangeRequestFactory {
-
-	protected final Log log = LogFactory.getLog(this.getClass());
-	private static final int INIT_BASE_OFFSET = 0;
+public class ExchangeRequestFactory extends BaseExchangeRequestFactory{
 	
+	Collection<PathToExtendedFieldType> itemExtendedPropertyPaths = new HashSet<PathToExtendedFieldType>();
+	Collection<PathToExtendedFieldType> folderExtendedPropertyPaths = new HashSet<PathToExtendedFieldType>();
+	
+	/* (non-Javadoc)
+	 * @see com.microsoft.exchange.BaseExchangeRequestFactory#getItemExtendedPropertyPaths()
+	 */
+	@Override
+	public Collection<PathToExtendedFieldType> getItemExtendedPropertyPaths() {
+		return itemExtendedPropertyPaths;
+	}
+	
+	public void setItemExtendedPropertyPaths(Collection<PathToExtendedFieldType> itemPaths) {
+		itemExtendedPropertyPaths = itemPaths;
+	}
+
+	/* (non-Javadoc)
+	 * @see com.microsoft.exchange.BaseExchangeRequestFactory#getFolderExtendedPropertyPaths()
+	 */
+	@Override
+	public Collection<PathToExtendedFieldType> getFolderExtendedPropertyPaths() {
+		return folderExtendedPropertyPaths;
+	}	
+	
+	public void setFolderExtendedPropertyPaths(Collection<PathToExtendedFieldType> folderPaths) {
+		this.folderExtendedPropertyPaths = folderPaths;
+	}
 	
 	/**
-	 * @see <a href="http://msdn.microsoft.com/en-us/library/office/jj945066(v=exchg.150).aspx">EWS throttling in Exchange</a>
+	 * Construct a {@link ResolveNames} request which will search the Exchange
+	 * server using the
+	 * {@link ResolveNamesSearchScopeType#ACTIVE_DIRECTORY_CONTACTS} scope. This
+	 * method uses {@link DefaultShapeNamesType#ALL_PROPERTIES} to return all
+	 * properties for the contact matching the alias
+	 * 
+	 * @param alias
+	 * @return {@link ResolveNames}
 	 */
-	private static final int EWSFindCountLimit = 1000;
-	
-	private int maxFindItems = 500;
-
-	public int getMaxFindItems() {
-		return maxFindItems;
-	}
-
-	public void setMaxFindItems(int maxFindItems) {
-		this.maxFindItems = maxFindItems;
-	}
-
-	public EmptyFolder constructEmptyFolder(boolean deleteSubFolders, DisposalType disposalType, Collection<? extends BaseFolderIdType> folderIds){
-		EmptyFolder request = new EmptyFolder();
-		request.setDeleteSubFolders(deleteSubFolders);
-		request.setDeleteType(disposalType);
-		NonEmptyArrayOfBaseFolderIdsType nonEmptyArrayOfBaseFolderIds = new NonEmptyArrayOfBaseFolderIdsType();
-		nonEmptyArrayOfBaseFolderIds.getFolderIdsAndDistinguishedFolderIds().addAll(folderIds);
-		request.setFolderIds(nonEmptyArrayOfBaseFolderIds);
-		return request;
+	public ResolveNames constructResolveNames(String alias) {
+		return constructResolveNames(alias, true, ResolveNamesSearchScopeType.ACTIVE_DIRECTORY_CONTACTS, DefaultShapeNamesType.ALL_PROPERTIES);
 	}
 	
+	/**
+	 * Construct a {@link GetServerTimeZones} request
+	 * @param tzid - optional time zone id.  if specified the response will only contain information regarding this tz
+	 * @param returnFullTimeZoneData 
+	 * @return {@link GetServerTimeZones}
+	 */
 	public GetServerTimeZones constructGetServerTimeZones(String tzid, boolean returnFullTimeZoneData){
 		GetServerTimeZones request = new GetServerTimeZones();
 		if(StringUtils.isNotBlank(tzid)){
-			request.getIds().getIds().add(tzid);
+			NonEmptyArrayOfTimeZoneIdType tzidArray = new NonEmptyArrayOfTimeZoneIdType();
+			tzidArray.getIds().add(tzid);
+			request.setIds(tzidArray);
 		}
-		
 		request.setReturnFullTimeZoneData(returnFullTimeZoneData);
 		return request;
 	}
 	
-	public ResolveNames constructResolveNames(String alias) {
-		return constructResolveNames(alias, true, ResolveNamesSearchScopeType.ACTIVE_DIRECTORY_CONTACTS, DefaultShapeNamesType.ALL_PROPERTIES);
-	}
-
-	private ResolveNames constructResolveNames(String alias, boolean returnFullContactData, ResolveNamesSearchScopeType searchScope, DefaultShapeNamesType contactDataShape) {
-		ResolveNames resolveNames = new ResolveNames();
-		
-		resolveNames.setContactDataShape(contactDataShape);
-		
-		resolveNames.setReturnFullContactData(returnFullContactData);
-		
-		resolveNames.setSearchScope(searchScope);
-		
-		resolveNames.setUnresolvedEntry(alias);
-		
-		return resolveNames;
-		
-	}
-	
-	public GetUserConfiguration constructGetUserConfiguration(String name,
-			DistinguishedFolderIdType distinguishedFolderIdType) {
+	/**
+	 * Construct {@link GetUserConfiguration} request
+	 * @param name
+	 * @param distinguishedFolderIdType
+	 * @return {@link GetUserConfiguration}
+	 */
+	public GetUserConfiguration constructGetUserConfiguration(String name, DistinguishedFolderIdType distinguishedFolderIdType) {
 		GetUserConfiguration getUserConfiguration = new GetUserConfiguration();
 		UserConfigurationNameType userConfigurationNameType = new UserConfigurationNameType();
-		userConfigurationNameType
-				.setDistinguishedFolderId(distinguishedFolderIdType);
+		userConfigurationNameType.setDistinguishedFolderId(distinguishedFolderIdType);
 		userConfigurationNameType.setName(name);
-		getUserConfiguration
-				.setUserConfigurationName(userConfigurationNameType);
+		getUserConfiguration.setUserConfigurationName(userConfigurationNameType);
 		return getUserConfiguration;
 	}
 
+	/**
+	 * Constructs a {@link GetUserAvailabilityRequest} object
+	 * @param mailboxData
+	 * @param freeBusyView
+	 * @param suggestionsView
+	 * @param timeZone
+	 * @return {@link GetUserAvailabilityRequest}
+	 */
 	public GetUserAvailabilityRequest constructGetUserAvailabilityRequest(Collection<? extends MailboxData> mailboxData, FreeBusyViewOptions freeBusyView, SuggestionsViewOptions suggestionsView, TimeZone timeZone){
 		GetUserAvailabilityRequest request = new GetUserAvailabilityRequest();
-		
 		if(!CollectionUtils.isEmpty(mailboxData)){
 			ArrayOfMailboxData arrayOfMailboxData = new ArrayOfMailboxData();
 			arrayOfMailboxData.getMailboxDatas().addAll(mailboxData);
@@ -202,175 +187,29 @@ public class ExchangeRequestFactory {
 		if(null != suggestionsView){
 			request.setSuggestionsViewOptions(suggestionsView);
 		}
-		
 		if(null != freeBusyView){
 			request.setFreeBusyViewOptions(freeBusyView);
 		}
-		
 		if(null != timeZone){
 			request.setTimeZone(timeZone);
 		}
-		
-		return request;
-	}
-	
-	public CreateItem constructCreateCalendarItem(
-			List<? extends ItemType> list,
-			CalendarItemCreateOrDeleteOperationType sendTo,
-			FolderIdType folderIdType) {
-		DistinguishedFolderIdNameType parent = DistinguishedFolderIdNameType.CALENDAR;
-		return constructCreateItem(list, parent, sendTo, folderIdType);
-	}
-
-	public CreateItem constructCreateCalendarItem(Set<? extends ItemType> set,
-			CalendarItemCreateOrDeleteOperationType sendTo,
-			FolderIdType folderIdType) {
-		DistinguishedFolderIdNameType parent = DistinguishedFolderIdNameType.CALENDAR;
-		return constructCreateItem(set, parent, sendTo, folderIdType);
-	}
-	
-	public CreateItem constructCreateCalendarItem(Set<? extends ItemType> set,
-			FolderIdType folderIdType) {
-		DistinguishedFolderIdNameType parent = DistinguishedFolderIdNameType.CALENDAR;
-		return constructCreateItem(set, parent, null, folderIdType);
-	}
-
-	public CreateItem constructCreateTaskItem(List<? extends ItemType> list,
-			FolderIdType folderIdType) {
-		DistinguishedFolderIdNameType parent = DistinguishedFolderIdNameType.TASKS;
-		return constructCreateItem(list, parent, null, folderIdType);
-	}
-
-	public CreateItem constructCreateMessageItem(List<? extends ItemType> list,
-			FolderIdType folderIdType) {
-		DistinguishedFolderIdNameType parent = DistinguishedFolderIdNameType.INBOX;
-		MessageDispositionType disposition = MessageDispositionType.SEND_ONLY;
-		CalendarItemCreateOrDeleteOperationType sendTo = CalendarItemCreateOrDeleteOperationType.SEND_ONLY_TO_ALL;
-		return constructCreateItem(list, parent, disposition, sendTo,
-				folderIdType);
-	}
-	
-	public CreateItem constructCreateAcceptItem(ItemIdType itemId) {
-		CreateItem request = new CreateItem();
-		request.setMessageDisposition(MessageDispositionType.SEND_AND_SAVE_COPY);
-		NonEmptyArrayOfAllItemsType arrayOfItems = new NonEmptyArrayOfAllItemsType();
-		
-		AcceptItemType acceptItem = new AcceptItemType();
-		acceptItem.setReferenceItemId(itemId);
-		
-		arrayOfItems.getItemsAndMessagesAndCalendarItems().add(acceptItem);
-		request.setItems(arrayOfItems);
 		return request;
 	}
 
-	private CreateItem constructCreateItem(List<? extends ItemType> list,
-			DistinguishedFolderIdNameType parent,
-			MessageDispositionType dispositionType,
-			CalendarItemCreateOrDeleteOperationType sendTo,
-			FolderIdType folderIdType) {
-
-		CreateItem request = new CreateItem();
-
-		NonEmptyArrayOfAllItemsType arrayOfItems = new NonEmptyArrayOfAllItemsType();
-		arrayOfItems.getItemsAndMessagesAndCalendarItems().addAll(list);
-
-		request.setItems(arrayOfItems);
-
-		// When the MessageDispositionType is used for the CreateItemType, it
-		// only applies to e-mail messages.
-		if (null != dispositionType) {
-			request.setMessageDisposition(dispositionType);
-		}
-
-		TargetFolderIdType tagetFolderId = new TargetFolderIdType();
-		if (folderIdType == null || folderIdType.getId() == null
-				|| StringUtils.isBlank(folderIdType.getId())) {
-			DistinguishedFolderIdType parentDistinguishedFolderId = getParentDistinguishedFolderId(parent);
-			log.debug("calendarId is null or empty. tagetFolderId = "
-					+ parentDistinguishedFolderId);
-			tagetFolderId.setDistinguishedFolderId(parentDistinguishedFolderId);
-		} else {
-			// don't set changeKey on create as it may have changed in a prior
-			// operation
-			FolderIdType fIdType = new FolderIdType();
-			fIdType.setId(folderIdType.getId());
-			tagetFolderId.setFolderId(fIdType);
-		}
-		request.setSavedItemFolderId(tagetFolderId);
-
-		if (null != sendTo) {
-			request.setSendMeetingInvitations(sendTo);
-		}
-
-		return request;
-	}
-
-	private CreateItem constructCreateItem(Set<? extends ItemType> list,
-			DistinguishedFolderIdNameType parent,
-			MessageDispositionType dispositionType,
-			CalendarItemCreateOrDeleteOperationType sendTo,
-			FolderIdType folderIdType) {
-
-		CreateItem request = new CreateItem();
-
-		NonEmptyArrayOfAllItemsType arrayOfItems = new NonEmptyArrayOfAllItemsType();
-		arrayOfItems.getItemsAndMessagesAndCalendarItems().addAll(list);
-
-		request.setItems(arrayOfItems);
-
-		// When the MessageDispositionType is used for the CreateItemType, it
-		// only applies to e-mail messages.
-		if (null != dispositionType) {
-			request.setMessageDisposition(dispositionType);
-		}
-
-		TargetFolderIdType tagetFolderId = new TargetFolderIdType();
-		if (folderIdType == null || folderIdType.getId() == null
-				|| StringUtils.isBlank(folderIdType.getId())) {
-			DistinguishedFolderIdType parentDistinguishedFolderId = getParentDistinguishedFolderId(parent);
-			log.debug("calendarId is null or empty. tagetFolderId = "
-					+ parentDistinguishedFolderId);
-			tagetFolderId.setDistinguishedFolderId(parentDistinguishedFolderId);
-		} else {
-			// don't set changeKey on create as it may have changed in a prior
-			// operation
-			FolderIdType fIdType = new FolderIdType();
-			fIdType.setId(folderIdType.getId());
-			tagetFolderId.setFolderId(fIdType);
-		}
-		request.setSavedItemFolderId(tagetFolderId);
-
-		if (null != sendTo) {
-			request.setSendMeetingInvitations(sendTo);
-		}
-
-		return request;
-	}
-
-	private CreateItem constructCreateItem(List<? extends ItemType> list,
-			DistinguishedFolderIdNameType parent,
-			CalendarItemCreateOrDeleteOperationType sendTo,
-			FolderIdType folderIdType) {
-
-		return constructCreateItem(list, parent, null, sendTo, folderIdType);
-	}
-
-	private CreateItem constructCreateItem(Set<? extends ItemType> set,
-			DistinguishedFolderIdNameType parent,
-			CalendarItemCreateOrDeleteOperationType sendTo,
-			FolderIdType folderIdType) {
-
-		return constructCreateItem(set, parent, null, sendTo, folderIdType);
-	}
-
+    //================================================================================
+    // CreateFolder
+    //================================================================================
 	/**
-	 * FOLDER OPERATIONS
+	 * Constructs a {@link CreateFolder} request specific for createing a {@link SearchFolderType}
 	 * 
+	 * @see <a href="http://msdn.microsoft.com/en-us/library/office/dn592094(v=exchg.150).aspx">How to: Work with search folders by using EWS in Exchange</a>
+	 * @category Create Search Folder
+	 * 
+	 * @param displayName
 	 * @param searchRoot
 	 * @param restriction
-	 * @param displayName
+	 * @return {@link CreateFolder}
 	 */
-
 	public CreateFolder constructCreateSearchFolder(String displayName,
 			DistinguishedFolderIdNameType searchRoot,
 			RestrictionType restriction) {
@@ -414,34 +253,48 @@ public class ExchangeRequestFactory {
 		return createFolder;
 	}
 	
-	public CreateFolder constructCreateCalendarFolder(String displayName,
-			Collection<ExtendedPropertyType> exProps) {
+	/**
+	 * Construct a {@link CreateFolder} request specific for creating a {@link CalendarFolderType}
+	 * @category Create Calendar Folder
+	 * 
+	 * @param displayName
+	 * @param exProps - {@link ExtendedPropertyType}s to set on the created {@link CalendarFolderType}
+	 * @return {@link CreateFolder}
+	 */
+	public CreateFolder constructCreateCalendarFolder(String displayName, Collection<ExtendedPropertyType> exProps) {
 		Validate.isTrue(StringUtils.isNotBlank(displayName),"displayName argument cannot be empty");
-		BaseFolderType c = new CalendarFolderType();
-		c.setDisplayName(displayName);
+		CalendarFolderType calendarFolder = new CalendarFolderType();
+		calendarFolder.setDisplayName(displayName);
 		if(!CollectionUtils.isEmpty(exProps)){
-			c.getExtendedProperties().addAll(exProps);
+			calendarFolder.getExtendedProperties().addAll(exProps);
 		}
-		return constructCreateFolder(DistinguishedFolderIdNameType.CALENDAR, c);
+		return constructCreateFolder(DistinguishedFolderIdNameType.CALENDAR, Collections.singleton(calendarFolder));
 	}
 
+	/**
+	 * Constructs a {@link CreateFolder} request specific for creating {@link TasksFolderType}s.
+	 * @category Create Task Folder
+	 * @param displayName
+	 * @param exProps  {@link ExtendedPropertyType}s to set on the created {@link TasksFolderType}
+	 * @return {@link CreateFolder}
+	 */
 	public CreateFolder constructCreateTaskFolder(String displayName,
 			Collection<ExtendedPropertyType> exProps) {
 		Validate.isTrue(StringUtils.isNotBlank(displayName),"displayName argument cannot be empty");
-		BaseFolderType c = new TasksFolderType();
-		c.setDisplayName(displayName);
+		TasksFolderType taskFolder = new TasksFolderType();
+		taskFolder.setDisplayName(displayName);
 		if(!CollectionUtils.isEmpty(exProps)){
-			c.getExtendedProperties().addAll(exProps);
+			taskFolder.getExtendedProperties().addAll(exProps);
 		}
-		return constructCreateFolder(DistinguishedFolderIdNameType.TASKS, c);
+		return constructCreateFolder(DistinguishedFolderIdNameType.TASKS, Collections.singleton(taskFolder));
 	}
 
 	/**
 	 * Attempt to create a calendar group i.e. a folder that may contain a number of sub calendars.
-	 * I don't think you can create a calendar group using EWS
+	 * I don't think you can create a calendar group using EWS, though it's possible this code is just wrong.
 	 * @param upn
 	 * @param displayName
-	 * @return
+	 * @return {@link CreateFolder}
 	 */
 	@Deprecated
 	public CreateFolder constructCreateCalendarFolderGroup(String upn,
@@ -474,194 +327,257 @@ public class ExchangeRequestFactory {
 
 		calendarFolderType.setPermissionSet(calendarPermissionSetType);
 		return constructCreateFolder(DistinguishedFolderIdNameType.CALENDAR,
-				calendarFolderType);
+				Collections.singleton(calendarFolderType));
 	}
 
-	public CreateFolder constructCreateFolder(
-			DistinguishedFolderIdNameType parent, BaseFolderType folder) {
-		return constructCreateFolder(parent, Collections.singletonList(folder));
-	}
-
-	public CreateFolder constructCreateFolder(
-			DistinguishedFolderIdNameType parent,
-			Collection<? extends BaseFolderType> folders) {
-		CreateFolder createFolder = new CreateFolder();
-		TargetFolderIdType parentTargetFolderId = getParentTargetFolderId(parent);
-		createFolder.setParentFolderId(parentTargetFolderId);
-
-		NonEmptyArrayOfFoldersType folderArray = new NonEmptyArrayOfFoldersType();
-		folderArray.getFoldersAndCalendarFoldersAndContactsFolders().addAll(
-				folders);
-
-		createFolder.setFolders(folderArray);
-		return createFolder;
-	}
-
-	public CreateFolder constructCreateFolder(FolderIdType folderIdType,
-			BaseFolderType folder) {
-		CreateFolder createFolder = new CreateFolder();
-
-		TargetFolderIdType targetFolderIdType = new TargetFolderIdType();
-		targetFolderIdType.setFolderId(folderIdType);
-		createFolder.setParentFolderId(targetFolderIdType);
-
-		NonEmptyArrayOfFoldersType folderArray = new NonEmptyArrayOfFoldersType();
-		folderArray.getFoldersAndCalendarFoldersAndContactsFolders()
-				.add(folder);
-
-		createFolder.setFolders(folderArray);
-		return createFolder;
-	}
-
-	public GetFolder constructGetFolderByName(
-			DistinguishedFolderIdNameType parent) {
-		DistinguishedFolderIdType parentDistinguishedFolderId = getParentDistinguishedFolderId(parent);
+	//================================================================================
+    // GetFolder
+    //================================================================================	
+	
+	/**
+	 * Construct a {@link GetFolder} request for the given {@link DistinguishedFolderIdNameType}
+	 * @category Get Distinguished Folder
+	 * @param name
+	 * @return{@link GetFolder}
+	 */
+	public GetFolder constructGetFolderByDistinguishedName(DistinguishedFolderIdNameType name) {
+		DistinguishedFolderIdType parentDistinguishedFolderId = getParentDistinguishedFolderId(name);
 		return constructGetFolderById(parentDistinguishedFolderId);
 	}
 
-	public GetFolder constructGetFolderById(BaseFolderIdType folderIdType) {
-		GetFolder getFolder = new GetFolder();
+	/**
+	 * Construct a {@link GetFolder} request for a given {@link BaseFolderIdType}
+	 * @category Get Base Folder
+	 * @param folderId
+	 * @return {@link GetFolder}
+	 */
+	public GetFolder constructGetFolderById(BaseFolderIdType folderId) {
 		NonEmptyArrayOfBaseFolderIdsType foldersArray = new NonEmptyArrayOfBaseFolderIdsType();
-		foldersArray.getFolderIdsAndDistinguishedFolderIds().add(folderIdType);
-		getFolder.setFolderIds(foldersArray);
-		FolderResponseShapeType responseShape = new FolderResponseShapeType();
-		responseShape.setBaseShape(DefaultShapeNamesType.ALL_PROPERTIES);
-		getFolder.setFolderShape(responseShape);
-		return getFolder;
+		foldersArray.getFolderIdsAndDistinguishedFolderIds().add(folderId);
+		return constructGetFolder(foldersArray);
 	}
 
-
+	//================================================================================
+    // FindFolder
+    //================================================================================	
+	/**
+	 * Construct a {@link FindFolder} request
+	 * @param parent
+	 * @param folderShape
+	 * @param folderQueryTraversalType
+	 * @return {@link FindFolder}
+	 */
 	public FindFolder constructFindFolder(DistinguishedFolderIdNameType parent, DefaultShapeNamesType folderShape, FolderQueryTraversalType folderQueryTraversalType) {
-		return constructFindFolder(parent, folderShape, folderQueryTraversalType, null);
+		return constructFindFolderInternal(parent, folderShape, folderQueryTraversalType, null);
 	}
 	
+	/**
+	 * Construct a {@link FindFolder} request
+	 * @param parent
+	 * @param folderShape
+	 * @param folderQueryTraversalType
+	 * @param restriction
+	 * @return {@link FindFolder}
+	 */
 	public FindFolder constructFindFolder(DistinguishedFolderIdNameType parent,
 			DefaultShapeNamesType folderShape,
 			FolderQueryTraversalType folderQueryTraversalType,
 			RestrictionType restriction) {
 		Validate.notNull(parent, "parent cannot be null");
-		Validate.notNull(folderQueryTraversalType,
-				"traversal type cannot be null");
+		Validate.notNull(folderQueryTraversalType, "traversal type cannot be null");
 		Validate.notNull(folderShape, "baseShape cannot be null");
 
-		FindFolder findFolder = new FindFolder();
-
-		findFolder.setTraversal(folderQueryTraversalType);
-
-		FolderResponseShapeType responseShape = new FolderResponseShapeType();
-		responseShape.setBaseShape(folderShape);
-		findFolder.setFolderShape(responseShape);
-
-		IndexedPageViewType pageView = constructIndexedPageView(INIT_BASE_OFFSET, EWSFindCountLimit, false);
-		findFolder.setIndexedPageFolderView(pageView);
-
-		DistinguishedFolderIdType parentDistinguishedFolderId = getParentDistinguishedFolderId(parent);
-		NonEmptyArrayOfBaseFolderIdsType array = new NonEmptyArrayOfBaseFolderIdsType();
-		array.getFolderIdsAndDistinguishedFolderIds().add(
-				parentDistinguishedFolderId);
-		findFolder.setParentFolderIds(array);
-
-		if (null != restriction) {
-			findFolder.setRestriction(restriction);
-		}
-
-		return findFolder;
-	}
-
-	public UpdateFolder constructRenameFolder(String newName,
-			FolderIdType folderId) {
-		FolderType folder = new FolderType();
-		folder.setDisplayName(newName);
-
-		PathToUnindexedFieldType path = new PathToUnindexedFieldType();
-		path.setFieldURI(UnindexedFieldURIType.FOLDER_DISPLAY_NAME);
-
-		ObjectFactory of = new ObjectFactory();
-
-		return constructUpdateFolderSetField(folder, of.createPath(path),
-				folderId);
-	}
-
-	protected UpdateFolder constructUpdateFolderDeleteExtendedProperty(
-			FolderIdType folderId, ExtendedPropertyType exProp) {
-		return constructUpdateFolderDeleteField(
-				getPathForExtendedPropertyType(exProp), folderId);
-	}
-
-	protected UpdateFolder constructUpdateFolderSetField(FolderType folder,
-			JAXBElement<? extends BasePathToElementType> path,
-			FolderIdType folderId) {
-		SetFolderFieldType changeDescription = new SetFolderFieldType();
-		changeDescription.setFolder(folder);
-		changeDescription.setPath(path);
-		return constructUpdateFolderInternal(changeDescription, folderId);
-	}
-
-	protected UpdateFolder constructUpdateFolderDeleteField(
-			JAXBElement<? extends BasePathToElementType> path,
-			FolderIdType folderId) {
-		DeleteFolderFieldType changeDescription = new DeleteFolderFieldType();
-		changeDescription.setPath(path);
-		return constructUpdateFolderInternal(changeDescription, folderId);
-	}
-
-	private UpdateFolder constructUpdateFolderInternal(
-			FolderChangeDescriptionType changeDescription, FolderIdType folderId) {
-
-		NonEmptyArrayOfFolderChangeDescriptionsType folderUpdates = new NonEmptyArrayOfFolderChangeDescriptionsType();
-		folderUpdates
-				.getAppendToFolderFieldsAndSetFolderFieldsAndDeleteFolderFields()
-				.add(changeDescription);
-
-		FolderChangeType folderChange = new FolderChangeType();
-		folderChange.setFolderId(folderId);
-		folderChange.setUpdates(folderUpdates);
-
-		NonEmptyArrayOfFolderChangesType changes = new NonEmptyArrayOfFolderChangesType();
-		changes.getFolderChanges().add(folderChange);
-
-		UpdateFolder updateRequest = new UpdateFolder();
-		updateRequest.setFolderChanges(changes);
-
-		return updateRequest;
-	}
-
-	public GetItem constructGetItemIds(Collection<ItemIdType> itemIds) {
-		Validate.isTrue(!CollectionUtils.isEmpty(itemIds),"itemIds cannot be empty");
-		Set<PathToExtendedFieldType> extendedPropertyPaths = getExtendedPropertyPaths();
-		ItemResponseShapeType responseShape = constructTextResponseShape(DefaultShapeNamesType.ID_ONLY, extendedPropertyPaths);
-		GetItem getItem = constructGetItem(itemIds, responseShape);
-		return getItem;
+		return constructFindFolderInternal(parent, folderShape, folderQueryTraversalType, restriction);
 	}
 	
-	public GetItem constructGetItems(Collection<ItemIdType> itemIds) {
-		Validate.isTrue(!CollectionUtils.isEmpty(itemIds),"itemIds cannot be empty");
-		Set<PathToExtendedFieldType> extendedPropertyPaths = getExtendedPropertyPaths();
-		ItemResponseShapeType responseShape = constructTextResponseShape(DefaultShapeNamesType.ALL_PROPERTIES, extendedPropertyPaths);
-		GetItem getItem = constructGetItem(itemIds, responseShape);
-		return getItem;
+	//================================================================================
+    // UpdateFolder
+    //================================================================================	
+	/**
+	 * Constructs an {@link UpdateFolder} request for renaming an existing folder
+	 * @param newName
+	 * @param folderId
+	 * @return {@link UpdateFolder}
+	 */
+	public UpdateFolder constructRenameFolder(String newName, FolderIdType folderId) {
+		FolderType folder = new FolderType();
+		folder.setDisplayName(newName);
+		PathToUnindexedFieldType path = new PathToUnindexedFieldType();
+		path.setFieldURI(UnindexedFieldURIType.FOLDER_DISPLAY_NAME);
+		ObjectFactory of = new ObjectFactory();
+		return constructUpdateFolderSetField(folder, of.createPath(path), folderId);
+	}
+	
+	//================================================================================
+    // EmptyFolder
+    //================================================================================
+	/**
+	 * Construct an {@link EmptyFolder} request
+	 * Note this operation cannot be applied to CalendarFolders.
+	 * @param deleteSubFolders
+	 * @param disposalType
+	 * @param folderIds
+	 * @return {@link EmptyFolder}
+	 */
+	public EmptyFolder constructEmptyFolder(boolean deleteSubFolders, DisposalType disposalType, Collection<? extends BaseFolderIdType> folderIds){
+		EmptyFolder request = new EmptyFolder();
+		request.setDeleteSubFolders(deleteSubFolders);
+		request.setDeleteType(disposalType);
+		NonEmptyArrayOfBaseFolderIdsType nonEmptyArrayOfBaseFolderIds = new NonEmptyArrayOfBaseFolderIdsType();
+		nonEmptyArrayOfBaseFolderIds.getFolderIdsAndDistinguishedFolderIds().addAll(folderIds);
+		request.setFolderIds(nonEmptyArrayOfBaseFolderIds);
+		return request;
+	}
+	
+	//================================================================================
+    // DeleteFolder
+    //================================================================================
+	public DeleteFolder constructDeleteFolder(BaseFolderIdType folderId, DisposalType disposalType) {
+		return constructDeleteFolder(Collections.singleton(folderId), disposalType);
+	}
+	
+    //================================================================================
+    // CreateItem
+    //================================================================================
+	/**
+	 * Constructs a {@link CreateItem} request specific for creating {@link CalendarItemType} objects
+	 * @category CreateItem CalendarItem
+	 * 
+	 * @param calendarItems
+	 * @param sendTo
+	 * @param folderId
+	 * @return {@link CreateItem}
+	 */
+	public CreateItem constructCreateCalendarItem(
+			Collection<CalendarItemType> calendarItems,
+			CalendarItemCreateOrDeleteOperationType sendTo,
+			FolderIdType folderId) {
+		return constructCreateCalendarItemInternal(calendarItems, sendTo, folderId);
 	}
 	
 	/**
-	 * public GetItem constructGetItems
+	 * Constructs a {@link CreateItem} request specific for creating
+	 * {@link CalendarItemType} objects, within the default calendarFolder and
+	 * using {@link ExchangeRequestFactory#getDefaultCalendarCreateSendTo()}
 	 * 
-	 * @param itemIds
-	 * @param responseShape
+	 * @category CreateItem CalendarItem
+	 * 
+	 * @param calendarItems
 	 * @return
 	 */
-	protected GetItem constructGetItem(Collection<ItemIdType> itemIds,
-			ItemResponseShapeType responseShape) {
-		GetItem getItem = new GetItem();
-
-		NonEmptyArrayOfBaseItemIdsType itemIdArray = new NonEmptyArrayOfBaseItemIdsType();
-		itemIdArray.getItemIdsAndOccurrenceItemIdsAndRecurringMasterItemIds()
-				.addAll(itemIds);
-		getItem.setItemIds(itemIdArray);
-
-		getItem.setItemShape(responseShape);
-		return getItem;
+	public CreateItem constructCreateCalendarItem(
+			Collection<CalendarItemType> calendarItems) {
+		return constructCreateCalendarItemInternal(calendarItems, null, null);
 	}
 
+	/**
+	 * Constructs a {@link CreateItem} request specific for creating {@link TaskType} objects
+	 * @category CreateItem TaskItem
+	 * 
+	 * @param taskItems
+	 * @param folderId
+	 * @return {@link CreateItem}
+	 */
+	public CreateItem constructCreateTaskItem(Collection<TaskType> taskItems, FolderIdType folderId) {
+		return constructCreateTaskItem(taskItems, null, folderId);
+	}
+	
+	/**
+	 * Constructs a {link CreateItem} request specific for creating {@link MessageType}s (i.e. Email messages)
+	 * @param messageItems
+	 * @param folderId
+	 * @return {@link CreateItem}
+	 */
+	public CreateItem constructCreateMessageItem(Collection<MessageType> messageItems, FolderIdType folderId){
+		return constructCreateMessageItemInternal(messageItems, folderId);
+	}
+	
+	/**
+	 * Construct a {@link CreateItem} object which can be used to respond to a calendarInvitation
+	 * @param itemId - the itemId of the calendar invite you wish to respond to.
+	 * @param response - the type of response you wish to issue.  only {@link ResponseTypeType#ACCEPT}, {@link ResponseTypeType#DECLINE}, and {@link ResponseTypeType#TENTATIVE} are valid.
+	 * @return
+	 */
+	public CreateItem constructCreateItemResponse(ItemIdType itemId, ResponseTypeType response){
+		CreateItem request = new CreateItem();
+		request.setMessageDisposition(MessageDispositionType.SEND_AND_SAVE_COPY);
+		NonEmptyArrayOfAllItemsType arrayOfItems = new NonEmptyArrayOfAllItemsType();
+		
+		WellKnownResponseObjectType responseType = null;
+		switch(response){
+			case ACCEPT : responseType = new AcceptItemType();
+				break;
+			case DECLINE : responseType = new DeclineItemType();
+				break;
+			case TENTATIVE : responseType = new TentativelyAcceptItemType();
+				break;
+			default: log.warn(response +" is not a WellKnownResponse type");
+				return null;
+		}
+		responseType.setReferenceItemId(itemId);
+		arrayOfItems.getItemsAndMessagesAndCalendarItems().add(responseType);
+		request.setItems(arrayOfItems);
+		return request;
+	}
+	
+	/**
+	 * Construct {@link CreateItem} specific accepting {@link CalendarItemType}s using {@link AcceptItemType}
+	 * @category CreateItem AcceptItem
+	 * 
+	 * @param itemId
+	 * @return {@link CreateItem}
+	 */
+	public CreateItem constructCreateAcceptItemResponse(ItemIdType itemId) {
+		return constructCreateItemResponse(itemId, ResponseTypeType.ACCEPT);
+	}
+	
+	/**
+	 * Construct {@link CreateItem} specific declining {@link CalendarItemType}s using {@link DeclineItemType}
+	 * @category CreateItem AcceptItem
+	 * 
+	 * @param itemId
+	 * @return {@link CreateItem}
+	 */
+	public CreateItem constructCreateDeclineItemResponse(ItemIdType itemId){
+		return constructCreateItemResponse(itemId, ResponseTypeType.DECLINE);
+	}
+	
+	/**
+	 * Construct {@link CreateItem} specific tentatively accepting {@link CalendarItemType}s using {@link TentativelyAcceptItemType}
+	 * @category CreateItem AcceptItem
+	 * 
+	 * @param itemId
+	 * @return {@link CreateItem}
+	 */
+	public CreateItem constructCreateTentativeItemResponse(ItemIdType itemId){
+		return constructCreateItemResponse(itemId, ResponseTypeType.TENTATIVE);
+	}	
+
+	//================================================================================
+    // GetItem
+    //================================================================================	
+	/**
+	 * Construct a GetItem request which will only return {@link DefaultShapeNamesType#ID_ONLY} and {@link ExtendedPropertyType}s defined by {@link BaseExchangeRequestFactory#getItemExtendedPropertyPaths()}
+	 * @param itemIds
+	 * @return
+	 */
+	public GetItem constructGetItemIds(Collection<ItemIdType> itemIds) {
+		Validate.isTrue(!CollectionUtils.isEmpty(itemIds),"itemIds cannot be empty");
+		return constructGetItem(itemIds, DefaultShapeNamesType.ID_ONLY);
+	}
+	/**
+	 * Construct a GetItem request which will only return {@link DefaultShapeNamesType#ALL_PROPERTIES} and {@link ExtendedPropertyType}s defined by {@link BaseExchangeRequestFactory#getItemExtendedPropertyPaths()}
+	 * @param itemIds
+	 * @return
+	 */
+	public GetItem constructGetItems(Collection<ItemIdType> itemIds) {
+		Validate.isTrue(!CollectionUtils.isEmpty(itemIds),"itemIds cannot be empty");
+		return constructGetItem(itemIds, DefaultShapeNamesType.ALL_PROPERTIES);
+	}
+
+	//================================================================================
+    // DeleteItem
+    //================================================================================	
 	/**
 	 * public DeleteItem constructDeleteItem
 	 * 
@@ -684,32 +600,6 @@ public class ExchangeRequestFactory {
 	 *            non-task items are deleted.
 	 * @return
 	 */
-	protected DeleteItem constructDeleteItem(
-			Collection<? extends BaseItemIdType> itemIds,
-			DisposalType disposalType,
-			CalendarItemCreateOrDeleteOperationType sendTo,
-			AffectedTaskOccurrencesType affectedTaskOccurrencesType) {
-		Validate.notEmpty(itemIds, "must specify at least one itemId.");
-		Validate.notNull(disposalType, "disposalType cannot be null");
-		DeleteItem deleteItem = new DeleteItem();
-
-		if (null != affectedTaskOccurrencesType) {
-			deleteItem.setAffectedTaskOccurrences(affectedTaskOccurrencesType);
-		}
-		deleteItem.setDeleteType(disposalType);
-
-		NonEmptyArrayOfBaseItemIdsType arrayOfItemIds = new NonEmptyArrayOfBaseItemIdsType();
-		arrayOfItemIds
-				.getItemIdsAndOccurrenceItemIdsAndRecurringMasterItemIds()
-				.addAll(itemIds);
-		deleteItem.setItemIds(arrayOfItemIds);
-
-		if (null != sendTo) {
-			deleteItem.setSendMeetingCancellations(sendTo);
-		}
-		return deleteItem;
-	}
-
 	public DeleteItem constructDeleteCalendarItems(
 			Collection<? extends BaseItemIdType> itemIds,
 			DisposalType disposalType,
@@ -718,6 +608,13 @@ public class ExchangeRequestFactory {
 		return constructDeleteItem(itemIds, disposalType, sendTo, null);
 	}
 
+	/**
+	 * Constructs a {@link DeleteItem} request specific for deleting a {@link CalendarItemType}
+	 * @param itemId
+	 * @param disposalType
+	 * @param sendTo
+	 * @return
+	 */
 	public DeleteItem constructDeleteCalendarItem(BaseItemIdType itemId,
 			DisposalType disposalType,
 			CalendarItemCreateOrDeleteOperationType sendTo) {
@@ -725,6 +622,13 @@ public class ExchangeRequestFactory {
 				disposalType, sendTo);
 	}
 
+	/**
+	 * Construct a {@link DeleteItem} request specific for deleting a {@link TaskType} 
+	 * @param itemIds
+	 * @param disposalType
+	 * @param affectedTaskOccurrencesType
+	 * @return
+	 */
 	public DeleteItem constructDeleteTaskItems(
 			Collection<? extends BaseItemIdType> itemIds,
 			DisposalType disposalType,
@@ -734,26 +638,10 @@ public class ExchangeRequestFactory {
 		return constructDeleteItem(itemIds, disposalType, null,
 				affectedTaskOccurrencesType);
 	}
-
-	public DeleteFolder constructDeleteFolder(BaseFolderIdType folderId, DisposalType disposalType) {
-		return constructDeleteFolder(Collections.singleton(folderId), disposalType);
-	}
 	
-	public DeleteFolder constructDeleteFolder(
-			Collection<? extends BaseFolderIdType> folderIds,
-			DisposalType disposalType) {
-		Validate.notEmpty(folderIds, "folderIds cannot be empty");
-		DeleteFolder deleteFolder = new DeleteFolder();
-		deleteFolder.setDeleteType(disposalType);
-
-		NonEmptyArrayOfBaseFolderIdsType folderIdArray = new NonEmptyArrayOfBaseFolderIdsType();
-		folderIdArray.getFolderIdsAndDistinguishedFolderIds().addAll(folderIds);
-		deleteFolder.setFolderIds(folderIdArray);
-
-		return deleteFolder;
-	}
-
-
+	//================================================================================
+    // FindItem
+    //================================================================================	
 	/**
 	 * 
 	 * FindItem operations
@@ -762,7 +650,7 @@ public class ExchangeRequestFactory {
 	 * @param view
 	 * @param responseShape
 	 * @param traversal
-	 * 
+	 *  
 	 *            Shallow - Instructs the FindFolder operation to search only
 	 *            the identified folder and to return only the folder IDs for
 	 *            items that have not been deleted. This is called a shallow
@@ -778,459 +666,50 @@ public class ExchangeRequestFactory {
 	 * @param folderIds
 	 * @return
 	 */
-	protected FindItem constructIndexedPageViewFindItem(
-			IndexedPageViewType view, ItemResponseShapeType responseShape,
-			ItemQueryTraversalType traversal, RestrictionType restriction,
-			Collection<FieldOrderType> sortOrderList,
-			Collection<? extends BaseFolderIdType> folderIds) {
-		FindItem findItem = new FindItem();
-
-		findItem.setIndexedPageItemView(view);
-		findItem.setItemShape(responseShape);
-		findItem.setTraversal(traversal);
-
-		if (null != restriction) {
-			findItem.setRestriction(restriction);
-		}
-
-		if (!CollectionUtils.isEmpty(sortOrderList)) {
-			NonEmptyArrayOfFieldOrdersType sortOrder = new NonEmptyArrayOfFieldOrdersType();
-			sortOrder.getFieldOrders().addAll(sortOrderList);
-			findItem.setSortOrder(sortOrder);
-		}
-
-		if (!CollectionUtils.isEmpty(folderIds)) {
-			NonEmptyArrayOfBaseFolderIdsType parentFolderIds = new NonEmptyArrayOfBaseFolderIdsType();
-			parentFolderIds.getFolderIdsAndDistinguishedFolderIds().addAll(
-					folderIds);
-			findItem.setParentFolderIds(parentFolderIds);
-		}
-
-		return findItem;
-	}
-	
-	protected FindItem constructCalendarViewFindItem(Date startTime, Date endTime, ItemResponseShapeType responseShape,	ItemQueryTraversalType traversal,Collection<? extends BaseFolderIdType> folderIds) {
-		
-		FindItem findItem = new FindItem();
-		findItem.setCalendarView(constructCalendarView(startTime, endTime));
-		findItem.setItemShape(responseShape);
-		findItem.setTraversal(traversal);
-		NonEmptyArrayOfBaseFolderIdsType array = new NonEmptyArrayOfBaseFolderIdsType();
-		array.getFolderIdsAndDistinguishedFolderIds().addAll(folderIds);
-		findItem.setParentFolderIds(array);
-		
-		return findItem;
-		
-	}
-
-	@Deprecated
-	protected FindItem constructCalendarViewFindItem(Date startTime,
-			Date endTime, ItemResponseShapeType responseShape,
-			ItemQueryTraversalType traversal, RestrictionType restriction,
-			Collection<FieldOrderType> sortOrderList,
-			Collection<? extends BaseFolderIdType> folderIds) {
-
-		log.warn("Restrictions and sort order may not be specified for a CalendarView AND WILL BE OMITTED FROM THIS REQUEST!!!");
-		return constructCalendarViewFindItem(startTime,endTime,responseShape,traversal,folderIds);
-	}
-
-	public FindItem constructCalendarViewFindItem(
-			CalendarViewType calendarView, ItemResponseShapeType responseShape,
-			ItemQueryTraversalType traversal, RestrictionType restriction,
-			List<FieldOrderType> sortOrderList) {
-
-		FindItem findItem = new FindItem();
-		findItem.setCalendarView(calendarView);
-		findItem.setItemShape(responseShape);
-		findItem.setTraversal(traversal);
-		NonEmptyArrayOfFieldOrdersType sortOrder = new NonEmptyArrayOfFieldOrdersType();
-		for (FieldOrderType fot : sortOrderList) {
-			sortOrder.getFieldOrders().add(fot);
-		}
-		findItem.setSortOrder(sortOrder);
-
-		return findItem;
-	}
 
 	/**
-	 * see: http://msdn.microsoft.com/en-us/library/aa564515(v=exchg.140).aspx
+	 * Construct a {@link FindItem} request which will return the first {@link ExchangeRequestFactory#getMaxFindItems()} items found.
+	 * This method uses an {@link IndexedPageViewType} which supports paging but cannot expand recurrence for you.
 	 * 
-	 * @param startTime
-	 * @param endTime
-	 * @return
+	 * @param folderIds
+	 * @return {@link FindItem}
 	 */
-	public CalendarViewType constructCalendarView(Date startTime, Date endTime) {
-		CalendarViewType calendarView = new CalendarViewType();
-		calendarView.setMaxEntriesReturned(getMaxFindItems());
-		calendarView.setStartDate(DateHelp
-				.convertDateToXMLGregorianCalendar(startTime));
-		calendarView.setEndDate(DateHelp
-				.convertDateToXMLGregorianCalendar(endTime));
-
-		return calendarView;
-	}
-
-	public IndexedPageViewType constructIndexedPageView(Integer start,
-			Integer length, Boolean reverse) {
-		IndexedPageViewType view = new IndexedPageViewType();
-		view.setMaxEntriesReturned(length);
-		view.setOffset(start);
-		if (reverse) {
-			view.setBasePoint(IndexBasePointType.END);
-		} else {
-			view.setBasePoint(IndexBasePointType.BEGINNING);
-		}
-		return view;
-	}
-
-	/**
-	 * ItemResponseShapeType
-	 * 
-	 * @param baseShape
-	 *            -DefaultShapeNamesType.ALL_PROPERTIES;
-	 *            -DefaultShapeNamesType.DEFAULT;
-	 *            -DefaultShapeNamesType.ID_ONLY;
-	 * 
-	 * @param bodyType
-	 * @param htmlToUtf8
-	 * @param filterHtml
-	 * @param includeMime
-	 * @param exProps
-	 * @return
-	 */
-	public ItemResponseShapeType constructResponseShapeExProps(
-			DefaultShapeNamesType baseShape, BodyTypeResponseType bodyType,
-			Boolean htmlToUtf8, Boolean filterHtml, Boolean includeMime,
-			Collection<ExtendedPropertyType> exProps) {
-
-		ItemResponseShapeType responseShape = new ItemResponseShapeType();
-		responseShape.setBaseShape(baseShape);
-		if (null != bodyType) {
-			responseShape.setBodyType(bodyType);
-		}
-		if (null != htmlToUtf8) {
-			responseShape.setConvertHtmlCodePageToUTF8(htmlToUtf8);
-		}
-		if (null != filterHtml) {
-			responseShape.setFilterHtmlContent(filterHtml);
-		}
-		if (null != includeMime) {
-			responseShape.setIncludeMimeContent(includeMime);
-		}
-		if (null != exProps) {
-			responseShape
-					.setAdditionalProperties(getPathsFromExtendedProps(exProps));
-		}
-		return responseShape;
-	}
-
-	
-	public ItemResponseShapeType constructResponseShape(
-			DefaultShapeNamesType baseShape, BodyTypeResponseType bodyType,
-			Boolean htmlToUtf8, Boolean filterHtml, Boolean includeMime,
-			Collection<PathToExtendedFieldType> exPaths) {
-
-		NonEmptyArrayOfPathsToElementType additionalProperties = new NonEmptyArrayOfPathsToElementType();
-		if (!CollectionUtils.isEmpty(exPaths)) {
-			ObjectFactory of = new ObjectFactory();
-			
-			for (PathToExtendedFieldType p : exPaths) {
-				JAXBElement<PathToExtendedFieldType> exFieldUri = of
-						.createExtendedFieldURI(p);
-				additionalProperties.getPaths().add(exFieldUri);
-			}
-		}
-		return constructResponseShape(baseShape, bodyType, htmlToUtf8, filterHtml, includeMime, additionalProperties);
-	}
-
-	public ItemResponseShapeType constructResponseShape(
-			DefaultShapeNamesType baseShape, BodyTypeResponseType bodyType,
-			Boolean htmlToUtf8, Boolean filterHtml, Boolean includeMime,
-			NonEmptyArrayOfPathsToElementType exProps) {
-
-		ItemResponseShapeType responseShape = new ItemResponseShapeType();
-		responseShape.setBaseShape(baseShape);
-		if (null != bodyType) {
-			responseShape.setBodyType(bodyType);
-		}
-		if (null != htmlToUtf8) {
-			responseShape.setConvertHtmlCodePageToUTF8(htmlToUtf8);
-		}
-		if (null != filterHtml) {
-			responseShape.setFilterHtmlContent(filterHtml);
-		}
-		if (null != includeMime) {
-			responseShape.setIncludeMimeContent(includeMime);
-		}
-		if (null != exProps && !CollectionUtils.isEmpty(exProps.getPaths()) ) {
-			responseShape.setAdditionalProperties(exProps);
-		}
-		return responseShape;
-	}
-
-	private NonEmptyArrayOfPathsToElementType getPathsFromExtendedProps(
-			Collection<ExtendedPropertyType> exProps) {
-		NonEmptyArrayOfPathsToElementType paths = new NonEmptyArrayOfPathsToElementType();
-		for (ExtendedPropertyType extendedPropertyType : exProps) {
-			paths.getPaths().add(
-					getPathForExtendedPropertyType(extendedPropertyType));
-		}
-		return paths;
-	}
-
-	
-	
-	// TODO one of these should be deprecated.
-	public ItemResponseShapeType constructTextResponseShape(DefaultShapeNamesType baseShape,
-			NonEmptyArrayOfPathsToElementType exProps) {
-		return constructResponseShape(baseShape, BodyTypeResponseType.TEXT, true, true, false, exProps);
-	}
-	
-	public ItemResponseShapeType constructTextResponseShape(DefaultShapeNamesType baseShape,
-			Collection<PathToExtendedFieldType> exProps) {
-		return constructResponseShape(baseShape, BodyTypeResponseType.TEXT, true, true, false, exProps);
-	}
-	
-	public ItemResponseShapeType constructResponseShape(
-			DefaultShapeNamesType baseShape,
-			Collection<PathToExtendedFieldType> exPaths) {
-		return constructResponseShape(baseShape, null, null, null, null,
-				exPaths);
-	}
-
-	public ItemResponseShapeType constructResponseShape(
-			DefaultShapeNamesType baseShape,
-			NonEmptyArrayOfPathsToElementType exProps) {
-		return constructResponseShape(baseShape, null, null, null, null,
-				exProps);
-	}
-
-	public ItemResponseShapeType constructResponseShapeWithExProps(
-			DefaultShapeNamesType baseShape,
-			Collection<ExtendedPropertyType> exProps) {
-		return constructResponseShapeExProps(baseShape, null, null, null, null,
-				exProps);
-	}
-
-	public ItemResponseShapeType constructResponseShape(
-			DefaultShapeNamesType baseShape) {
-		Collection<ExtendedPropertyType> exProps = null;
-		return constructResponseShapeExProps(baseShape, null, null, null, null,
-				exProps);
-	}
-
-	/**
-	 * PARENT
-	 * 
-	 * getParentTargetFolderId and getParentDistinguishedFolderId both accept
-	 * DistinguishedFolderIdNameType
-	 * 
-	 * ARCHIVEDELETEDITEMS ARCHIVEMSGFOLDERROOT ARCHIVERECOVERABLEITEMSDELETIONS
-	 * ARCHIVERECOVERABLEITEMSPURGES ARCHIVERECOVERABLEITEMSROOT
-	 * ARCHIVERECOVERABLEITEMSVERSIONS ARCHIVEROOT CALENDAR CONTACTS
-	 * DELETEDITEMS DRAFTS INBOX JOURNAL JUNKEMAIL MSGFOLDERROOT NOTES OUTBOX
-	 * PUBLICFOLDERSROOT RECOVERABLEITEMSDELETIONS RECOVERABLEITEMSPURGES
-	 * RECOVERABLEITEMSROOT RECOVERABLEITEMSVERSIONS SEARCHFOLDERS SENTITEMS
-	 * TASKS VOICEMAIL
-	 * 
-	 * @param parent
-	 * 
-	 * @return
-	 */
-	protected TargetFolderIdType getParentTargetFolderId(
-			DistinguishedFolderIdNameType parent) {
-		TargetFolderIdType targetFolderIdType = new TargetFolderIdType();
-		targetFolderIdType
-				.setDistinguishedFolderId(getParentDistinguishedFolderId(parent));
-		return targetFolderIdType;
-	}
-
-	/**
-	 * @param parent
-	 * @return
-	 */
-	protected DistinguishedFolderIdType getParentDistinguishedFolderId(
-			DistinguishedFolderIdNameType parent) {
-		DistinguishedFolderIdType distinguishedFolderIdType = new DistinguishedFolderIdType();
-		distinguishedFolderIdType.setId(parent);
-		return distinguishedFolderIdType;
-	}
-
-	public DistinguishedFolderIdType getPrimaryCalendarDistinguishedFolderId() {
-		return getParentDistinguishedFolderId(DistinguishedFolderIdNameType.CALENDAR);
-	}
-
-	public DistinguishedFolderIdType getPrimaryContactsDistinguishedFolderId() {
-		return getParentDistinguishedFolderId(DistinguishedFolderIdNameType.CONTACTS);
-	}
-
-	public DistinguishedFolderIdType getPrimaryTasksDistinguishedFolderId() {
-		return getParentDistinguishedFolderId(DistinguishedFolderIdNameType.TASKS);
-	}
-
-	public DistinguishedFolderIdType getPrimaryNotesDistinguishedFolderId() {
-		return getParentDistinguishedFolderId(DistinguishedFolderIdNameType.NOTES);
-	}
-
-	public DistinguishedFolderIdType getPrimaryJournalDistinguishedFolderId() {
-		return getParentDistinguishedFolderId(DistinguishedFolderIdNameType.JOURNAL);
-	}
-
-	/**
-	 * 
-	 * 
-	 * @param extendedPropertyType
-	 * @return
-	 */
-	public JAXBElement<PathToExtendedFieldType> getPathForExtendedPropertyType(
-			ExtendedPropertyType extendedPropertyType) {
-		ObjectFactory objectFactory = new ObjectFactory();
-		JAXBElement<PathToExtendedFieldType> extendedFieldURI = objectFactory
-				.createExtendedFieldURI(extendedPropertyType
-						.getExtendedFieldURI());
-		return extendedFieldURI;
-	}
-	
-	protected FindItem constructIndexedPageViewFindFirstItemIdsShallow(RestrictionType restriction,NonEmptyArrayOfPathsToElementType exProps,  Collection<? extends BaseFolderIdType> folderIds) {
-		return constructIndexedPageViewFindItemIdsShallow(INIT_BASE_OFFSET, getMaxFindItems(), restriction, exProps, folderIds);
-	}
-	
-	private FindItem constructIndexedPageViewFindItemIdsShallow(int offset, int maxItems,  RestrictionType restriction,NonEmptyArrayOfPathsToElementType exProps,  Collection<? extends BaseFolderIdType> folderIds) {
-		return constructIndexedPageViewFindItem(offset, maxItems, DefaultShapeNamesType.ID_ONLY, ItemQueryTraversalType.SHALLOW, restriction, exProps, folderIds);
-	}
-	
-	private FindItem constructIndexedPageViewFindItem(int offset, int maxItems, DefaultShapeNamesType baseShape, ItemQueryTraversalType traversalType, RestrictionType restriction,NonEmptyArrayOfPathsToElementType exProps,  Collection<? extends BaseFolderIdType> folderIds) {
-		if(maxItems > EWSFindCountLimit){
-			log.warn("The default policy in Exchange limits the page size to 1000 items. Setting the page size to a value that is greater than this number has no practical effect. --http://msdn.microsoft.com/en-us/library/office/jj945066(v=exchg.150).aspx#bk_PolicyParameters");
-		}
-		//use indexed view as restrictions cannot be applied to calendar view
-		IndexedPageViewType view = constructIndexedPageView(offset,maxItems,false);
-		
-		//only return id,  note you can return a limited set of additional properties
-		// 	see:http://msdn.microsoft.com/en-us/library/exchange/aa563810(v=exchg.140).aspx
-		ItemResponseShapeType responseShape = constructResponseShape(baseShape,exProps);
-		
-		
-		FieldOrderType sortOrder = constructSortOrder();
-		List<FieldOrderType> sortOrderList = Collections.singletonList(sortOrder);
-		//FindItem findItem = constructIndexedPageViewFindItem(view, responseShape, ItemQueryTraversalType.ASSOCIATED, restriction, sortOrderList, folderIds);
-		
-		FindItem findItem = constructIndexedPageViewFindItem(view, responseShape, traversalType, restriction, sortOrderList, folderIds);
-		return findItem;
-	}
-	
-	protected FieldOrderType constructSortOrder() {
-		ObjectFactory of = getObjectFactory();
-		//set sort order (earliest items first)
-		FieldOrderType sortOrder = new FieldOrderType();
-		sortOrder.setOrder(SortDirectionType.ASCENDING);
-		PathToUnindexedFieldType path = new PathToUnindexedFieldType();
-		path.setFieldURI(UnindexedFieldURIType.ITEM_ITEM_ID);
-		JAXBElement<PathToUnindexedFieldType> sortPath = of.createFieldURI(path);
-		sortOrder.setPath(sortPath);
-		return sortOrder;
-	}
-	
-	protected ObjectFactory getObjectFactory() {
-		ObjectFactory of = new ObjectFactory();
-		return of;
-	}
-
-	public Set<PathToExtendedFieldType> getExtendedPropertyPaths() {
-		return new HashSet<PathToExtendedFieldType>();
-	}
-	
-	public NonEmptyArrayOfPathsToElementType getAdditionalExtendedProperties() {
-		NonEmptyArrayOfPathsToElementType aProps = new NonEmptyArrayOfPathsToElementType();
-		Set<PathToExtendedFieldType> extendedPropertyPaths = getExtendedPropertyPaths();
-		if(!CollectionUtils.isEmpty(extendedPropertyPaths)){
-			for(PathToExtendedFieldType p: extendedPropertyPaths) {
-				JAXBElement<PathToExtendedFieldType> j = getObjectFactory().createExtendedFieldURI(p);
-				aProps.getPaths().add(j);
-			}
-		}
-		return aProps;
-	}
-
-	protected JAXBElement<IsLessThanOrEqualToType> getCalendarItemEndRestriction(	Date endTime) {
-		ObjectFactory of = getObjectFactory();
-		IsLessThanOrEqualToType endType = new IsLessThanOrEqualToType();
-		XMLGregorianCalendar end = DateHelp.convertDateToXMLGregorianCalendar(endTime);
-		PathToUnindexedFieldType endPath = new PathToUnindexedFieldType();
-		endPath.setFieldURI(UnindexedFieldURIType.CALENDAR_END);
-		JAXBElement<PathToUnindexedFieldType> endFieldURI = of.createFieldURI(endPath);
-		endType.setPath(endFieldURI);
-		FieldURIOrConstantType endConstant = new FieldURIOrConstantType();
-		ConstantValueType endValue = new ConstantValueType();
-		endValue.setValue(end.toXMLFormat());
-		endConstant.setConstant(endValue);
-		endType.setFieldURIOrConstant(endConstant);
-		JAXBElement<IsLessThanOrEqualToType> endSearchExpression = of.createIsLessThanOrEqualTo(endType);
-		return endSearchExpression;
-	}
-
-	protected JAXBElement<IsGreaterThanOrEqualToType> getCalendarItemStartRestriction(Date startTime) {
-		ObjectFactory of = getObjectFactory();
-		IsGreaterThanOrEqualToType startType = new IsGreaterThanOrEqualToType();
-		XMLGregorianCalendar start = DateHelp.convertDateToXMLGregorianCalendar(startTime);
-		PathToUnindexedFieldType startPath = new PathToUnindexedFieldType();
-		startPath.setFieldURI(UnindexedFieldURIType.CALENDAR_START);
-		JAXBElement<PathToUnindexedFieldType> startFieldURI = of.createFieldURI(startPath);
-		startType.setPath(startFieldURI);
-		FieldURIOrConstantType startConstant = new FieldURIOrConstantType();
-		ConstantValueType startValue = new ConstantValueType();
-		startValue.setValue(start.toXMLFormat());
-		startConstant.setConstant(startValue);
-		startType.setFieldURIOrConstant(startConstant);
-		JAXBElement<IsGreaterThanOrEqualToType> startSearchExpression = of.createIsGreaterThanOrEqualTo(startType);
-		return startSearchExpression;
-	}
-
-
 	public FindItem constructFindFirstItemIdSet(Collection<FolderIdType> folderIds) {
 		return constructFindAllItemIds(INIT_BASE_OFFSET, getMaxFindItems(), folderIds);
 	}
 	
+	/**
+	 * Construct a {@link FindItem} request which will return up to {@link ExchangeRequestFactory#getMaxFindItems()} items, beginning with the item at index={@code offset}
+	 * If you don't have an offset start with {@link ExchangeRequestFactory#constructFindFirstItemIdSet}
+	 * @param offset
+	 * @param folderIds
+	 * @return {@link FindItem}
+	 */
 	public FindItem constructFindNextItemIdSet(int offset, Collection<FolderIdType> folderIds) {
 		return constructFindAllItemIds(offset, getMaxFindItems(), folderIds);
 	}
 	
+	/**
+	 * Construct a {@link FindItem} request which will return a maximum of {@link ExchangeRequestFactory#getMaxFindItems()}, beginning with the item at index={@code offset}
+	 * @param offset
+	 * @param maxItems
+	 * @param folderIds
+	 * @return {@link FindItem}
+	 */
 	public FindItem constructFindAllItemIds(int offset, int maxItems, Collection<FolderIdType> folderIds) {
 		//FindAllItems = no restriction
 		RestrictionType restriction = null;
-		NonEmptyArrayOfPathsToElementType exProps = new NonEmptyArrayOfPathsToElementType();
-		return constructIndexedPageViewFindItemIdsShallow(offset, maxItems, restriction, exProps, folderIds);
+		return constructIndexedPageViewFindItemIdsShallow(offset, maxItems, restriction, folderIds);
 	}
 	
-	
 	/**
+	 * Constructs a {@link FindItem} request using an {@link IndexedPageViewType}
 	 * @param startTime
 	 * @param endTime
-	 * @param of
-	 * @return
+	 * @param folderIds
+	 * @return {@link FindItem}
 	 */
-	protected RestrictionType constructFindCalendarItemsByDateRangeRestriction(Date startTime, Date endTime) {
-		ObjectFactory of = getObjectFactory();
-		JAXBElement<IsGreaterThanOrEqualToType> startSearchExpression = getCalendarItemStartRestriction(startTime);
-		
-		JAXBElement<IsLessThanOrEqualToType> endSearchExpression = getCalendarItemEndRestriction( endTime);
-		
-		//and them all together
-		AndType andType = new AndType();
-		andType.getSearchExpressions().add(startSearchExpression);
-		andType.getSearchExpressions().add(endSearchExpression);
-		JAXBElement<AndType> andSearchExpression = of.createAnd(andType);
-		
-		//3) create restriction and set (2) searchExpression
-		RestrictionType restrictionType = new RestrictionType();
-		restrictionType.setSearchExpression(andSearchExpression);
-		return restrictionType;
-	}
-	
-	/**
-	 * FindItem operations
-	 */
-	public FindItem constructFindItemIdsByDateRange(Date startTime, Date endTime, Collection<FolderIdType> folderIds) {
+	public FindItem constructIndexedPageViewFindItemIdsByDateRange(Date startTime, Date endTime, Collection<FolderIdType> folderIds) {
 		Collection<? extends BaseFolderIdType> baseFolderIds = folderIds;
 		if(CollectionUtils.isEmpty(baseFolderIds)) {
 			DistinguishedFolderIdType distinguishedFolderIdType = new DistinguishedFolderIdType();
@@ -1239,29 +718,23 @@ public class ExchangeRequestFactory {
 		}
 		
 		RestrictionType restriction = constructFindCalendarItemsByDateRangeRestriction(startTime, endTime);
-		return constructIndexedPageViewFindFirstItemIdsShallow(restriction,getAdditionalExtendedProperties(), baseFolderIds);
+		return constructIndexedPageViewFindFirstItemIdsShallow(restriction, baseFolderIds);
 	}
 	
-	public FindItem constructFindCalendarItemIdsByDateRange(Date startTime, Date endTime, Collection<FolderIdType> folderIds) {
+	/**
+	 * Constructs a {@link FindItem} request using a {@link CalendarViewType}
+	 * @param startTime
+	 * @param endTime
+	 * @param folderIds
+	 * @return {@link FindItem}
+	 */
+	public FindItem constructCalendarViewFindCalendarItemIdsByDateRange(Date startTime, Date endTime, Collection<FolderIdType> folderIds) {
 		Collection<? extends BaseFolderIdType> baseFolderIds = folderIds;
 		if(CollectionUtils.isEmpty(baseFolderIds)) {
 			DistinguishedFolderIdType distinguishedFolderIdType = new DistinguishedFolderIdType();
 			distinguishedFolderIdType.setId(DistinguishedFolderIdNameType.CALENDAR);
 			baseFolderIds = Collections.singleton(distinguishedFolderIdType);
 		}
-		ItemResponseShapeType responseShape = constructResponseShape(DefaultShapeNamesType.ID_ONLY, getAdditionalExtendedProperties());
-		return constructCalendarViewFindItem(startTime, endTime, responseShape,  ItemQueryTraversalType.SHALLOW,  baseFolderIds);
+		return constructCalendarViewFindItemIdsByDateRange(startTime, endTime, baseFolderIds);
 	}
-
-	public NonEmptyArrayOfPathsToElementType getAdditionalProperties() {
-		// TODO strongly suggest you override this
-		return null;
-	}
-	
-	public Collection<ExtendedPropertyType> getExtendedProperties() {
-		// TODO strongly suggest you override this
-		List<ExtendedPropertyType> exProps = new ArrayList<ExtendedPropertyType>();
-		return exProps;
-	}
-	
 }

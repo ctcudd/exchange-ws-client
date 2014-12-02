@@ -16,26 +16,28 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package com.microsoft.exchange.ical.model;
-
-import com.microsoft.exchange.types.ItemIdType;
-
-import net.fortuna.ical4j.model.property.XProperty;
 /**
  * 
- * @author ctcudd
+ */
+package com.microsoft.exchange.ical.model;
+
+import com.microsoft.exchange.types.ExtendedPropertyType;
+import com.microsoft.exchange.types.PathToExtendedFieldType;
+
+import net.fortuna.ical4j.model.parameter.XParameter;
+import net.fortuna.ical4j.model.property.XProperty;
+
+/**
+ * {@link XProperty} intended to store the value from {@link ExtendedPropertyType#getExtendedFieldURI()}.getPropertyTag()
+ *  @author ctcudd
  *
  */
-public class ItemTypeItemId extends XProperty{
+public class PathToExtendedFieldTypePropertyTagParamater extends XParameter {
 
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = 7840657473114832271L;
-	private static final String X_EWS_ITEM_ID ="X-EWS-ITEMID";
+	private static final long serialVersionUID = -643813978660622928L;
+	public static final String PATH_TO_EXTENDED_FIELD_TYPE_PROPERTY_TAG = "X-EWS-PATH-TO-EXTENDED-FIELD-TYPE-PROPERTY-TAG";
 
-	public ItemTypeItemId(ItemIdType itemIdType) {
-		super(X_EWS_ITEM_ID, itemIdType.getId());
+	public PathToExtendedFieldTypePropertyTagParamater(PathToExtendedFieldType path) {
+		super(PATH_TO_EXTENDED_FIELD_TYPE_PROPERTY_TAG, path.getPropertyTag());
 	}
-
 }

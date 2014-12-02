@@ -20,24 +20,24 @@
  * 
  */
 package com.microsoft.exchange.ical.model;
-import com.microsoft.exchange.types.ItemIdType;
 
+import com.microsoft.exchange.types.ExtendedPropertyType;
+import com.microsoft.exchange.types.PathToExtendedFieldType;
+
+import net.fortuna.ical4j.model.parameter.XParameter;
 import net.fortuna.ical4j.model.property.XProperty;
 
 /**
- * @author ctcudd
+ * {@link XProperty} intended to store the value from {@link ExtendedPropertyType#getExtendedFieldURI()}.getPropertySetId()
+ *  @author ctcudd
  *
  */
-public class ItemTypeChangeKey extends XProperty {
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = -6922783488869641439L;
-	
-	private static final String X_EWS_ITEM_CHANGEKEY ="X-EWS-CHANGEKEY";
-	
-	public ItemTypeChangeKey(ItemIdType itemIdType) {
-		super(X_EWS_ITEM_CHANGEKEY, itemIdType.getChangeKey());
-	}
+public class PathToExtendedFieldTypePropertySetIdParamater extends XParameter {
 
+	private static final long serialVersionUID = -4134877982723519823L;
+	public static final String PATH_TO_EXTENDED_FIELD_TYPE_PROPERTY_SET_ID = "X-EWS-PATH-TO-EXTENDED-FIELD-TYPE-PROPERTY-SET-ID";
+
+	public PathToExtendedFieldTypePropertySetIdParamater(PathToExtendedFieldType path) {
+		super(PATH_TO_EXTENDED_FIELD_TYPE_PROPERTY_SET_ID, path.getPropertySetId());
+	}
 }

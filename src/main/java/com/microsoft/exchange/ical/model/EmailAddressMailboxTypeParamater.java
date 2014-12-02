@@ -16,29 +16,24 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * 
- */
 package com.microsoft.exchange.ical.model;
 
-import com.microsoft.exchange.types.PathToExtendedFieldType;
+import com.microsoft.exchange.types.MailboxTypeType;
 
 import net.fortuna.ical4j.model.parameter.XParameter;
-
 /**
+ * {@link XParameter} indented to take the value of a {@link MailboxTypeType}
+ * 
  * @author ctcudd
  *
  */
-public class PathToExtendedFieldTypePropertyType extends XParameter {
+public class EmailAddressMailboxTypeParamater extends XParameter {
 
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = -3389706638539898240L;
-	private static final String PATH_TO_EXTENDED_FIELD_TYPE_PROPERTY_TYPE = "X-EWS-PATH-TO-EXTENDED-FIELD-TYPE-PROPERTY-TYPE";
-
-	public PathToExtendedFieldTypePropertyType(PathToExtendedFieldType path) {
-		super(PATH_TO_EXTENDED_FIELD_TYPE_PROPERTY_TYPE, path.getPropertyType().value());
+	private static final long serialVersionUID = 5365130984683399890L;
+	public static final String EMAIL_ADDRESS_MAILBOX_TYPE = "X-EWS-EMAIL-ADDRESS-MAILBOX-TYPE";
+	
+	public EmailAddressMailboxTypeParamater(MailboxTypeType mailboxTypeType) {
+		super(EMAIL_ADDRESS_MAILBOX_TYPE, mailboxTypeType.value());
 	}
 
 }

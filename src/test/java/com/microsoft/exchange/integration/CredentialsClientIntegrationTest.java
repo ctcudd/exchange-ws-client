@@ -31,7 +31,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import com.microsoft.exchange.DateHelp;
+import com.microsoft.exchange.ExchangeDateUtils;
 import com.microsoft.exchange.impl.http.ThreadLocalCredentialsProviderFactory;
 import com.microsoft.exchange.messages.GetUserAvailabilityRequest;
 import com.microsoft.exchange.messages.GetUserAvailabilityResponse;
@@ -75,7 +75,7 @@ public class CredentialsClientIntegrationTest extends AbstractIntegrationTest {
 	@Test
 	public void testGetUserAvailability() {
 		initializeCredentials();
-		GetUserAvailabilityRequest request = constructAvailabilityRequest(DateHelp.makeDate(startDate), DateHelp.makeDate(endDate), emailAddress);
+		GetUserAvailabilityRequest request = constructAvailabilityRequest(ExchangeDateUtils.makeDate(startDate), ExchangeDateUtils.makeDate(endDate), emailAddress);
 		GetUserAvailabilityResponse response = ewsClient.getUserAvailability(request);
 	
 		Assert.assertNotNull(response);

@@ -16,29 +16,26 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/**
- * 
- */
 package com.microsoft.exchange.ical.model;
 
-import com.microsoft.exchange.types.PathToExtendedFieldType;
+import com.microsoft.exchange.types.ItemIdType;
 
-import net.fortuna.ical4j.model.parameter.XParameter;
-
+import net.fortuna.ical4j.model.property.XProperty;
 /**
+ * 
  * @author ctcudd
  *
  */
-public class PathToExtendedFieldTypePropertyId extends XParameter {
+public class ItemTypeItemIdProperty extends XProperty{
 
 	/**
 	 * 
 	 */
-	private static final long serialVersionUID = -8857164759801589763L;
-	private static final String PATH_TO_EXTENDED_FIELD_TYPE_PROPERTY_ID = "X-EWS-PATH-TO-EXTENDED-FIELD-TYPE-PROPERTY-ID";
+	private static final long serialVersionUID = 7840657473114832271L;
+	public static final String X_EWS_ITEM_ID ="X-EWS-ITEMID";
 
-	public PathToExtendedFieldTypePropertyId(PathToExtendedFieldType path) {
-		super(PATH_TO_EXTENDED_FIELD_TYPE_PROPERTY_ID,path.getPropertyId().toString());
+	public ItemTypeItemIdProperty(ItemIdType itemIdType) {
+		super(X_EWS_ITEM_ID, itemIdType.getId());
 	}
 
 }

@@ -11,7 +11,6 @@
 	<import resource="exchangeContext-autodiscover.xml"/>
 
 	<bean id="ewsClient" class="com.microsoft.exchange.impl.ExchangeWebServicesClient">
-	
 		<property name="marshaller" ref="jaxbMarshaller" />
 		<property name="unmarshaller" ref="jaxbMarshaller" />
 		<property name="messageFactory">
@@ -22,9 +21,9 @@
 			<ref bean="messageSender" />
 		</property>
 		
-		<!-- use one of the following entries but never both.  You can hard code a defaultUri or specify a destinationProvider -->
+		<!-- You can hard code a defaultUri or specify a destinationProvider but not both -->
 		<property name="defaultUri" value="${endpoint}"/>
-<!-- 		<property name="destinationProvider" ref="ewsDestinationProvider" /> -->
+		<!-- <property name="destinationProvider" ref="ewsDestinationProvider" /> -->
 		
 		<property name="interceptors">
 			<list>

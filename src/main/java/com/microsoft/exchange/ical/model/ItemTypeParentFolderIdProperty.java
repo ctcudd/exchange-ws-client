@@ -16,12 +16,28 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package com.microsoft.exchange.impl.http;
+/**
+ * 
+ */
+package com.microsoft.exchange.ical.model;
 
-public class ExchangeMessageSender {
+import net.fortuna.ical4j.model.property.XProperty;
 
-	public ExchangeMessageSender() {
-		// TODO Auto-generated constructor stub
+import com.microsoft.exchange.types.CalendarItemType;
+import com.microsoft.exchange.types.FolderIdType;
+
+/**
+ * {@link XProperty} intended to store the value from {@link CalendarItemType#getParentFolderId()}.getId()
+ * @author ctcudd
+ *
+ */
+public class ItemTypeParentFolderIdProperty extends XProperty {
+
+	private static final long serialVersionUID = 3908080047637096789L;
+	public static final String X_EWS_PARENT_FOLDER_ID = "X-EWS-PARENT-FOLDER-ID";
+	
+	public ItemTypeParentFolderIdProperty(FolderIdType parentFolderId) {
+		super(X_EWS_PARENT_FOLDER_ID, parentFolderId.getId());
 	}
 
 }

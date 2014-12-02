@@ -3,5 +3,6 @@ bootstrap
 .classpath
 .project
 exchange.properties
+exchange.PROD.properties
 target
 /target

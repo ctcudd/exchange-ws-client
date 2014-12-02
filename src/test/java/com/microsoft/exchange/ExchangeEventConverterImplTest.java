@@ -18,8 +18,12 @@
  */
 package com.microsoft.exchange;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
@@ -32,7 +36,9 @@ import javax.xml.datatype.XMLGregorianCalendar;
 import net.fortuna.ical4j.model.Calendar;
 import net.fortuna.ical4j.model.ComponentList;
 import net.fortuna.ical4j.model.component.VEvent;
+import net.fortuna.ical4j.model.parameter.CuType;
 import net.fortuna.ical4j.model.parameter.PartStat;
+import net.fortuna.ical4j.model.parameter.Role;
 import net.fortuna.ical4j.model.property.Clazz;
 import net.fortuna.ical4j.model.property.DtStart;
 import net.fortuna.ical4j.model.property.Priority;
@@ -48,10 +54,11 @@ import org.junit.Test;
 import com.microsoft.exchange.impl.ExchangeEventConverterImpl;
 import com.microsoft.exchange.types.CalendarItemType;
 import com.microsoft.exchange.types.ImportanceChoicesType;
+import com.microsoft.exchange.types.ItemType;
+import com.microsoft.exchange.types.MailboxTypeType;
 import com.microsoft.exchange.types.ResponseTypeType;
 import com.microsoft.exchange.types.SensitivityChoicesType;
 
-import edu.emory.mathcs.backport.java.util.Collections;
 
 public class ExchangeEventConverterImplTest {
 	protected final Log log = LogFactory.getLog(this.getClass());
@@ -90,8 +97,9 @@ public class ExchangeEventConverterImplTest {
 	
 	@Test
 	public void convertEmptyCalendarItem(){
-		CalendarItemType calendarItem = new CalendarItemType();
-		Calendar calendar = eventConverter.convertToCalendar(Collections.singleton(calendarItem), null);
+		ItemType calendarItem = new CalendarItemType();
+		Collection<ItemType> calendarItems = Collections.singleton(calendarItem);
+		Calendar calendar = eventConverter.convertToCalendar(calendarItems, "");
 		
 		//calendar should not be null
 		assertNotNull(calendar);
@@ -108,7 +116,7 @@ public class ExchangeEventConverterImplTest {
 	@Test
 	public void convertCalendarItemNoEnd(){
 		CalendarItemType calendarItem = new CalendarItemType();
-		calendarItem.setStart(DateHelp.convertDateToXMLGregorianCalendar(new Date()));
+		calendarItem.setStart(ExchangeDateUtils.convertDateToXMLGregorianCalendar(new Date()));
 		Calendar calendar = eventConverter.convertToCalendar(Collections.singleton(calendarItem), null);
 		
 		//calendar should not be null
@@ -128,7 +136,7 @@ public class ExchangeEventConverterImplTest {
 		CalendarItemType calendarItem = new CalendarItemType();
 		String randomSubject = RandomStringUtils.random(32);
 		
-		calendarItem.setStart(DateHelp.convertDateToXMLGregorianCalendar(new Date()));
+		calendarItem.setStart(ExchangeDateUtils.convertDateToXMLGregorianCalendar(new Date()));
 		Duration duration = DatatypeFactory.newInstance().newDuration(1000 * 60 * 60);
 		XMLGregorianCalendar end = calendarItem.getStart();
 		end.add(duration);
@@ -168,7 +176,7 @@ public class ExchangeEventConverterImplTest {
 	public void convertedCalendarMatchesStartTime() throws DatatypeConfigurationException{
 		CalendarItemType calendarItem = new CalendarItemType();		
 		Date dateStartIn = new Date();
-		XMLGregorianCalendar xmlStartIn = DateHelp.convertDateToXMLGregorianCalendar(dateStartIn);
+		XMLGregorianCalendar xmlStartIn = ExchangeDateUtils.convertDateToXMLGregorianCalendar(dateStartIn);
 		calendarItem.setStart(xmlStartIn);
 		
 		Duration duration = DatatypeFactory.newInstance().newDuration(1000 * 60 * 60);
@@ -203,7 +211,7 @@ public class ExchangeEventConverterImplTest {
 		assertNotNull(dtStart);
 		net.fortuna.ical4j.model.Date dateStartOut = dtStart.getDate();
 		assertNotNull(dateStartOut);
-		XMLGregorianCalendar xmlStartOut = DateHelp.convertDateToXMLGregorianCalendar(dateStartOut);
+		XMLGregorianCalendar xmlStartOut = ExchangeDateUtils.convertDateToXMLGregorianCalendar(dateStartOut);
 		
 		log.info("dateStartIn="+dateStartIn);
 		log.info("xmlStartIn="+xmlStartIn);
@@ -348,7 +356,21 @@ public class ExchangeEventConverterImplTest {
 			
 			log.info(p + " ==> "+importance);
 		}
-		
 	}
 	
+	@Test
+	public void convertMailboxType(){
+		for(MailboxTypeType type : MailboxTypeType.values()){
+			CuType cuType = ExchangeEventConverterImpl.convertMailboxTypeTypeToCuType(type, null);
+			if(type.equals(MailboxTypeType.PRIVATE_DL) || type.equals(MailboxTypeType.PUBLIC_DL)){
+				assertEquals(CuType.GROUP, cuType);
+			}else{
+				assertEquals(CuType.INDIVIDUAL, cuType);
+			}
+			
+			cuType = ExchangeEventConverterImpl.convertMailboxTypeTypeToCuType(type, Role.NON_PARTICIPANT);
+			assertEquals(CuType.RESOURCE, cuType);
+		}
+		
+	}
 }

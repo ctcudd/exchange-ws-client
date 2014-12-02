@@ -21,25 +21,23 @@
  */
 package com.microsoft.exchange.ical.model;
 
-import net.fortuna.ical4j.model.property.XProperty;
+import com.microsoft.exchange.types.EmailAddressType;
 
-import com.microsoft.exchange.types.FolderIdType;
+import net.fortuna.ical4j.model.parameter.XParameter;
 
 /**
+ * {@link XParameter} intended to hold the value from {@link EmailAddressType}.getRoutingType()
+ * 
  * @author ctcudd
  *
  */
-public class ItemTypeParentFolderChangeKey extends XProperty {
+public class EmailAddressRoutingTypeParamater extends XParameter {
 
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = -5828192510311418283L;
-
-	private static final String X_EWS_PARENT_FOLDER_CHANGEKEY ="X-EWS-PARENT-FOLDER-CHANGEKEY";
-
-	public ItemTypeParentFolderChangeKey(FolderIdType parentFolderId) {
-		super(X_EWS_PARENT_FOLDER_CHANGEKEY, parentFolderId.getChangeKey());
+	private static final long serialVersionUID = 6772316318466614629L;
+	public static final String EMAIL_ADDRESS_ROUTING_TYPE = "X-EWS-EMAIL-ADDRESS-ROUTING-TYPE";
+	
+	public EmailAddressRoutingTypeParamater(String routingType) {
+		super(EMAIL_ADDRESS_ROUTING_TYPE, routingType);
 	}
 
 }

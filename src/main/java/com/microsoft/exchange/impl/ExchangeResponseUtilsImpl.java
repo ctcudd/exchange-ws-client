@@ -66,12 +66,14 @@ import com.microsoft.exchange.messages.ResponseMessageType;
 import com.microsoft.exchange.messages.ResponseMessageType.MessageXml;
 import com.microsoft.exchange.messages.SuggestionsResponseType;
 import com.microsoft.exchange.messages.UpdateFolderResponse;
+import com.microsoft.exchange.messages.UpdateItemResponse;
 import com.microsoft.exchange.types.ArrayOfFoldersType;
 import com.microsoft.exchange.types.ArrayOfRealItemsType;
 import com.microsoft.exchange.types.ArrayOfResolutionType;
 import com.microsoft.exchange.types.ArrayOfSuggestionDayResult;
 import com.microsoft.exchange.types.ArrayOfTimeZoneDefinitionType;
 import com.microsoft.exchange.types.BaseFolderType;
+import com.microsoft.exchange.types.CalendarItemType;
 import com.microsoft.exchange.types.ContactItemType;
 import com.microsoft.exchange.types.EmailAddressDictionaryEntryType;
 import com.microsoft.exchange.types.EmailAddressDictionaryType;
@@ -83,7 +85,6 @@ import com.microsoft.exchange.types.ItemIdType;
 import com.microsoft.exchange.types.ItemType;
 import com.microsoft.exchange.types.ResolutionType;
 import com.microsoft.exchange.types.ResponseClassType;
-import com.microsoft.exchange.types.SuggestionDayResult;
 import com.microsoft.exchange.types.TimeZoneDefinitionType;
 
 
@@ -111,9 +112,44 @@ public class ExchangeResponseUtilsImpl implements ExchangeResponseUtils  {
 	 */
 	@Override
 	public Set<ItemType> parseGetItemResponse(GetItemResponse response) {
-		Set<ItemType> items = new HashSet<ItemType>();
 		confirmSuccess(response);
-		ArrayOfResponseMessagesType responseMessages = response.getResponseMessages();
+		return parseItemResponseMessages(response.getResponseMessages());
+	}
+	
+	/* (non-Javadoc)
+	 * @see com.microsoft.exchange.ExchangeResponseUtils#parseUpdateItemResponse(com.microsoft.exchange.messages.UpdateItemResponse)
+	 */
+	@Override
+	public Set<ItemIdType> parseUpdateItemResponse(UpdateItemResponse response){
+		confirmSuccess(response);
+		return parseItemIdResponseMessages(response.getResponseMessages());
+	}
+	
+	/**
+	 * Parse an {@link ArrayOfResponseMessagesType} and extract all of the {@link ItemIdType}s found
+	 * @param responseMessages
+	 * @return {@link Set} of {@link ItemIdType}
+	 */
+	private Set<ItemIdType> parseItemIdResponseMessages(ArrayOfResponseMessagesType responseMessages){
+		Set<ItemIdType> itemIds = new HashSet<ItemIdType>();
+		List<JAXBElement<? extends ResponseMessageType>> getItemResponseMessages = responseMessages.getCreateItemResponseMessagesAndDeleteItemResponseMessagesAndGetItemResponseMessages();
+		for(JAXBElement<? extends ResponseMessageType> responseMessageElement : getItemResponseMessages) {
+			ItemInfoResponseMessageType itemType = (ItemInfoResponseMessageType) responseMessageElement.getValue();
+			ArrayOfRealItemsType itemsArray = itemType.getItems();
+			for(ItemType i: itemsArray.getItemsAndMessagesAndCalendarItems()){
+				itemIds.add(i.getItemId());
+			}
+		}
+		return itemIds;
+	}
+	
+	/**
+	 * Parse an {@link ArrayOfResponseMessagesType} and extract all of the {@link ItemType} found.
+	 * @param responseMessages
+	 * @return {@link Set} of {@link ItemType}
+	 */
+	private Set<ItemType> parseItemResponseMessages(ArrayOfResponseMessagesType responseMessages){
+		Set<ItemType> items = new HashSet<ItemType>();
 		List<JAXBElement<? extends ResponseMessageType>> getItemResponseMessages = responseMessages.getCreateItemResponseMessagesAndDeleteItemResponseMessagesAndGetItemResponseMessages();
 		for(JAXBElement<? extends ResponseMessageType> responseMessageElement : getItemResponseMessages) {
 			ItemInfoResponseMessageType itemType = (ItemInfoResponseMessageType) responseMessageElement.getValue();
@@ -123,6 +159,11 @@ public class ExchangeResponseUtilsImpl implements ExchangeResponseUtils  {
 		return items;
 	}
 	
+	/**
+	 * Parse a {@link BaseResponseMessageType} and extract all the {@link FolderIdType}s found
+	 * @param response
+	 * @return {@link Set} of {@link FolderIdType}
+	 */
 	protected Set<FolderIdType> parseFolderResponse(BaseResponseMessageType response){
 		confirmSuccess(response);
 		Set<FolderIdType> folderIds = new HashSet<FolderIdType>();
@@ -268,7 +309,8 @@ public class ExchangeResponseUtilsImpl implements ExchangeResponseUtils  {
 	 * @see com.microsoft.exchange.ExchangeResponseUtils#parseFindFolderResponse(com.microsoft.exchange.messages.FindFolderResponse)
 	 */
 	@Override
-	public  List<BaseFolderType> parseFindFolderResponse(FindFolderResponse findFolderResponse) {
+	public  Set<BaseFolderType> parseFindFolderResponse(FindFolderResponse findFolderResponse) {
+		Set<BaseFolderType> results = new HashSet<BaseFolderType>();
 		ArrayOfResponseMessagesType findFolderResponseMessages = findFolderResponse.getResponseMessages();
 		List<JAXBElement<? extends ResponseMessageType>> folderItemResponseMessages = findFolderResponseMessages.getCreateItemResponseMessagesAndDeleteItemResponseMessagesAndGetItemResponseMessages();
 		for(JAXBElement<? extends ResponseMessageType> responseElement: folderItemResponseMessages) {
@@ -276,10 +318,10 @@ public class ExchangeResponseUtilsImpl implements ExchangeResponseUtils  {
 			if(null != itemType && null != itemType.getRootFolder() && null != itemType.getRootFolder().getFolders() && null != itemType.getRootFolder().getFolders().getFoldersAndCalendarFoldersAndContactsFolders()) {
 				FindFolderParentType rootFolder = itemType.getRootFolder();
 				ArrayOfFoldersType folders = rootFolder.getFolders();
-				return folders.getFoldersAndCalendarFoldersAndContactsFolders();
+				results.addAll(folders.getFoldersAndCalendarFoldersAndContactsFolders());
 			}
 		}
-		return null;
+		return results;
 	}
 
 	/* (non-Javadoc)
@@ -338,9 +380,9 @@ public class ExchangeResponseUtilsImpl implements ExchangeResponseUtils  {
 	 * @see com.microsoft.exchange.ExchangeResponseUtils#parseCreateItemResponse(com.microsoft.exchange.messages.CreateItemResponse)
 	 */
 	@Override
-	public  List<ItemIdType> parseCreateItemResponse(CreateItemResponse response) {
+	public  Set<ItemIdType> parseCreateItemResponse(CreateItemResponse response) {
 		confirmSuccess(response);
-		List<ItemIdType> itemIds = new ArrayList<ItemIdType>();
+		Set<ItemIdType> itemIds = new HashSet<ItemIdType>();
 		ArrayOfResponseMessagesType responseMessages = response.getResponseMessages();
 		List<JAXBElement<? extends ResponseMessageType>> createItemResponseMessages = responseMessages.getCreateItemResponseMessagesAndDeleteItemResponseMessagesAndGetItemResponseMessages();
 		for(JAXBElement<? extends ResponseMessageType> responeElement : createItemResponseMessages) {
@@ -422,11 +464,21 @@ public class ExchangeResponseUtilsImpl implements ExchangeResponseUtils  {
 		return calendarItems;
 	}
 	
+	@Override
+	public Set<CalendarItemType> parseFindCalendarItemResponse(FindItemResponse response){
+		Set<CalendarItemType> results = new HashSet<CalendarItemType>();
+		Set<ItemType> parsed = parseFindItemResponse(response);
+		for(ItemType i: parsed){
+			if(i instanceof CalendarItemType){
+				results.add( (CalendarItemType) i );
+			}
+		}
+		return results;
+	}
+	
 	private String parseInnerResponse(JAXBElement<? extends ResponseMessageType> innerResponse) {
-		
 		ResponseMessageType responseMessage = innerResponse.getValue();
 		return parseInnerResponse(responseMessage);
-		
 	}
 	
 	private String parseInnerResponse(ResponseMessageType responseMessage){
@@ -532,8 +584,8 @@ public class ExchangeResponseUtilsImpl implements ExchangeResponseUtils  {
 	 * @see com.microsoft.exchange.ExchangeResponseUtils#parseGetServerTimeZonesResponse(com.microsoft.exchange.messages.GetServerTimeZonesResponse)
 	 */
 	@Override
-	public List<TimeZoneDefinitionType> parseGetServerTimeZonesResponse(GetServerTimeZonesResponse response){
-		List<TimeZoneDefinitionType> zones = new ArrayList<TimeZoneDefinitionType>();
+	public Set<TimeZoneDefinitionType> parseGetServerTimeZonesResponse(GetServerTimeZonesResponse response){
+		Set<TimeZoneDefinitionType> zones = new HashSet<TimeZoneDefinitionType>();
 		if(confirmSuccess(response)){
 			ArrayOfResponseMessagesType responseMessages = response.getResponseMessages();
 			List<JAXBElement<? extends ResponseMessageType>> tzResponseMessages = responseMessages.getCreateItemResponseMessagesAndDeleteItemResponseMessagesAndGetItemResponseMessages();
@@ -542,7 +594,7 @@ public class ExchangeResponseUtilsImpl implements ExchangeResponseUtils  {
 				GetServerTimeZonesResponseMessageType itemInfo = (GetServerTimeZonesResponseMessageType) r;
 				ArrayOfTimeZoneDefinitionType timeZoneDefinitions = itemInfo.getTimeZoneDefinitions();
 				List<TimeZoneDefinitionType> timeZoneDefinitionsList = timeZoneDefinitions.getTimeZoneDefinitions();
-				zones = timeZoneDefinitionsList;
+				zones.addAll(timeZoneDefinitionsList);
 			}
 		}
 		return zones;
@@ -564,9 +616,12 @@ public class ExchangeResponseUtilsImpl implements ExchangeResponseUtils  {
 		return false;
 	}
 
+	/**
+	 * @param response
+	 * @return
+	 */
 	public FreeBusyView parseFreeBusyResponse(GetUserAvailabilityResponse response){
 		FreeBusyView freeBusyView = null;
-		
 		if(null != response){
 			ArrayOfFreeBusyResponse freeBusyResponseArray = response.getFreeBusyResponseArray();
 			if(null != freeBusyResponseArray){
@@ -588,10 +643,13 @@ public class ExchangeResponseUtilsImpl implements ExchangeResponseUtils  {
 				log.debug("ArrayOfFreeBusyResponse is null");
 			}
 		}
-		
 		return freeBusyView;
 	}
 	
+	/**
+	 * @param response
+	 * @return
+	 */
 	public ArrayOfSuggestionDayResult parseSuggestionDayResult(GetUserAvailabilityResponse response){
 		ArrayOfSuggestionDayResult suggestionResult = null;
 		if(null != response){
@@ -611,6 +669,5 @@ public class ExchangeResponseUtilsImpl implements ExchangeResponseUtils  {
 			
 		}
 		return suggestionResult;
-	}
-	
+	}	
 }

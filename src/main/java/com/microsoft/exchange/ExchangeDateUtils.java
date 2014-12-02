@@ -47,8 +47,8 @@ import org.joda.time.Period;
 /**
  * @author Nicholas Blair
  */
-public class DateHelp {
-	protected static final Log log = LogFactory.getLog(DateHelp.class);
+public class ExchangeDateUtils {
+	protected static final Log log = LogFactory.getLog(ExchangeDateUtils.class);
 	public static final Period MAX_PERIOD = Period.days(3660);
 
 	protected static final String DATE_TIME_FORMAT = "yyyyMMdd-HHmm";
@@ -81,52 +81,52 @@ public class DateHelp {
 	}
 	
 	/**
-	 * 
+	 * Construct a {@link XMLGregorianCalendar} for a given {@link Date}.
 	 * @param date
-	 * @return
+	 * @return {@link XMLGregorianCalendar}
 	 */
 	public static XMLGregorianCalendar convertDateToXMLGregorianCalendar(final Date date) {
 		return convertDateToXMLGregorianCalendar(date,null);
 	}
 	
 	public static XMLGregorianCalendar convertDateToXMLGregorianCalendar(final Date date, TimeZone tz) {
-		
 		if(date == null) {
 			return null;
 		}
 		DateTime dt = new DateTime(date);
 		GregorianCalendar calendar = new GregorianCalendar();
-//		calendar.setTime(date);
 		calendar.setTimeInMillis(dt.getTime());
 		if(tz != null){
 			calendar.setTimeZone(tz);
 		}
-		
 		XMLGregorianCalendar xmlDate = null;
-		
 		try {
 			 xmlDate = DatatypeFactory.newInstance().newXMLGregorianCalendar(calendar);
 		} catch (DatatypeConfigurationException e) {
 			throw new IllegalStateException("unable to invoke DatatypeFactory.newInstance", e);
 		}
 		if(tz == null) xmlDate.setTimezone(DatatypeConstants.FIELD_UNDEFINED);
-		
-		
 		long msDiff = Math.abs(xmlDate.toGregorianCalendar().getTime().getTime() - date.getTime());
 		org.apache.commons.lang.Validate.isTrue(msDiff < 1000, "original time ("+xmlDate.toGregorianCalendar().getTime()+") differs from converted time ("+date+") by more than 1000ms.  Check the Timezones?");
-		
 		return xmlDate;
-		
 	}
 
+	/**
+	 * Construct a {@link DateTime} for a given {@link XMLGregorianCalendar}
+	 * @param calendar
+	 * @return
+	 */
 	public static DateTime convertXMLGregorianCalendarToDateTime(XMLGregorianCalendar calendar){
 		return new DateTime(calendar.toGregorianCalendar().getTime());
 	}
 	
 	/**
+	 * helper method to create java.util.Date objects from a String
 	 * 
 	 * @param value
+	 *            format is "yyyyMMdd"
 	 * @return
+	 * @throws ParseException
 	 */
 	public static Date makeDate(String value) {
 		SimpleDateFormat df = new SimpleDateFormat(DATE_FORMAT);
@@ -139,9 +139,12 @@ public class DateHelp {
 	}
 	
 	/**
+	 * helper method to create java.util.Date objects from a String
 	 * 
 	 * @param value
+	 *            format is "yyyyMMdd-HHmm"
 	 * @return
+	 * @throws ParseException
 	 */
 	public static Date makeDateTime(String value) {
 		SimpleDateFormat df = new SimpleDateFormat(DATE_TIME_FORMAT);
@@ -153,6 +156,13 @@ public class DateHelp {
 		}
 	}
 	
+	/**
+	 * Construct a {@link List} of {@link Interval}s where each interval abuts and has a duration equal to that of {@code period}
+	 * @param start
+	 * @param end
+	 * @param period
+	 * @return
+	 */
 	public static List<Interval> generateIntervals(org.joda.time.DateTime start, org.joda.time.DateTime end, Period period){
 		if(period.getDays()>MAX_PERIOD.getDays()) {
 			period = MAX_PERIOD;
@@ -179,29 +189,29 @@ public class DateHelp {
 	 * @return
 	 */
 	public static List<Interval> generateMultipleIntervals(Date start, Date end, int count){
-		
 		List<Interval> intervals = generateIntervals(start, end);
-		
 		int actualCount = intervals.size();
 		if(count > actualCount) {
-			
 			while(actualCount < count) {
-				
 				List<Interval> tIntervals = new ArrayList<Interval>();
 				for(Interval i: intervals) {
 					tIntervals.addAll(generateIntervals(i.getStart().toDate(), i.getEnd().toDate()));
-					
 				}
 				intervals = tIntervals;
 				actualCount = intervals.size();
 			}
-			
 		}
-		
 		return intervals;
 	}
 	
-	
+	/**
+	 * Construct a pair of {@link Interval} that:
+	 * -are equal length/duration
+	 * -length/duration ~= (end-start)/2
+	 * -interval1.start=start
+	 * -interval1 abuts interval2 (interval2.starts immediately after interval1.end)
+	 * -interval2.end=end
+	 */
 	public static List<Interval> generateIntervals(Date start, Date end){
 		org.apache.commons.lang.Validate.isTrue(end.after(start));
 		long startInstant = start.getTime();
@@ -219,6 +229,7 @@ public class DateHelp {
 	}
 
 	/**
+	 * Gets an {@link XMLGregorianCalendar} with the current date/time
 	 * @return
 	 * @throws DatatypeConfigurationException
 	 */
@@ -227,17 +238,33 @@ public class DateHelp {
        return getXMLGregorianCalendar(gregorianCalendar);
     }
 	
+	/**
+	 * Gets an {@link XMLGregorianCalendar} with the current date/time and the given {@code timeZone}
+	 * @return
+	 * @throws DatatypeConfigurationException
+	 */
 	public static XMLGregorianCalendar getXMLGregorianCalendarNow(TimeZone timeZone) throws DatatypeConfigurationException  {
 	       GregorianCalendar gregorianCalendar = new GregorianCalendar(timeZone);
 	       return getXMLGregorianCalendar(gregorianCalendar);
 	}
 	
+	/**
+	 * Constructs an {@link XMLGregorianCalendar} given a {@link GregorianCalendar}
+	 * @param gregorianCalendar
+	 * @return
+	 * @throws DatatypeConfigurationException
+	 */
 	private static XMLGregorianCalendar getXMLGregorianCalendar(GregorianCalendar gregorianCalendar) throws DatatypeConfigurationException{
 		DatatypeFactory datatypeFactory = DatatypeFactory.newInstance();
         XMLGregorianCalendar now = datatypeFactory.newXMLGregorianCalendar(gregorianCalendar);
         return now;
 	}
 	
+	/**
+	 * @param a
+	 * @param b
+	 * @return true only if {@code a} and {@code b} are within one second
+	 */
 	public static boolean withinOneSecond(XMLGregorianCalendar a, XMLGregorianCalendar b){
 		if(a == null || b == null) return false;
 		

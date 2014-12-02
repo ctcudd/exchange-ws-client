@@ -20,25 +20,22 @@
  * 
  */
 package com.microsoft.exchange.ical.model;
+import com.microsoft.exchange.types.CalendarItemType;
+import com.microsoft.exchange.types.ItemIdType;
 
-import com.microsoft.exchange.types.PathToExtendedFieldType;
-
-import net.fortuna.ical4j.model.parameter.XParameter;
+import net.fortuna.ical4j.model.property.XProperty;
 
 /**
+ * {@link XProperty} intended to store the value from {@link CalendarItemType#getItemId()}.getChangeKey()
+ * 
  * @author ctcudd
  *
  */
-public class PathToExtendedFieldTypePropertyTag extends XParameter {
+public class ItemTypeChangeKeyProperty extends XProperty {
 
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = -643813978660622928L;
-	private static final String PATH_TO_EXTENDED_FIELD_TYPE_PROPERTY_TAG = "X-EWS-PATH-TO-EXTENDED-FIELD-TYPE-PROPERTY-TAG";
-
-	public PathToExtendedFieldTypePropertyTag(PathToExtendedFieldType path) {
-		super(PATH_TO_EXTENDED_FIELD_TYPE_PROPERTY_TAG, path.getPropertyTag());
+	private static final long serialVersionUID = -6922783488869641439L;
+	public static final String X_EWS_ITEM_CHANGEKEY ="X-EWS-CHANGEKEY";
+	public ItemTypeChangeKeyProperty(ItemIdType itemIdType) {
+		super(X_EWS_ITEM_CHANGEKEY, itemIdType.getChangeKey());
 	}
-
 }

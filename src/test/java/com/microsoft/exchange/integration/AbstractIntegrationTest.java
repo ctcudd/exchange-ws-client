@@ -47,7 +47,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.support.DataAccessUtils;
 import org.springframework.util.CollectionUtils;
 
-import com.microsoft.exchange.DateHelp;
+import com.microsoft.exchange.ExchangeDateUtils;
 import com.microsoft.exchange.ExchangeRequestFactory;
 import com.microsoft.exchange.ExchangeResponseUtils;
 import com.microsoft.exchange.ExchangeWebServices;
@@ -140,12 +140,14 @@ public abstract class AbstractIntegrationTest {
 	protected ExchangeResponseUtils responseUtils = new ExchangeResponseUtilsImpl();
 	protected ExchangeRequestFactory requestFactory = new ExchangeRequestFactory();
 	
-	@Value("${integrationtest.email}")
+	@Value("${integration.email}")
 	protected String emailAddress = "someemailaddress@on.yourexchangeserver.edu";
-	@Value("${integrationtest.startDate}")
-	protected String startDate = "2012-10-11";
-	@Value("${integrationtest.endDate}")
-	protected String endDate = "2014-10-12";
+	
+	@Value("${integrationtest.startDate:2012-01-01}")
+	protected String startDate;
+	
+	@Value("${integrationtest.endDate:2014-01-01}")
+	protected String endDate;
 	
 	/**
 	 * This method gets called at the beginning of each integration test method.
@@ -161,7 +163,7 @@ public abstract class AbstractIntegrationTest {
 		FindFolderResponse response = ewsClient.findFolder(request);
 		assertNotNull(response);
 		
-		List<BaseFolderType> foundFolders = responseUtils.parseFindFolderResponse(response);
+		Set<BaseFolderType> foundFolders = responseUtils.parseFindFolderResponse(response);
 		
 		for(BaseFolderType folder: foundFolders ) {
 			log.info(folder.getDisplayName());
@@ -170,7 +172,7 @@ public abstract class AbstractIntegrationTest {
 	
 	public void getPrimaryCalendarFolder() {
 		initializeCredentials();
-		GetFolder request = requestFactory.constructGetFolderByName(DistinguishedFolderIdNameType.CALENDAR);
+		GetFolder request = requestFactory.constructGetFolderByDistinguishedName(DistinguishedFolderIdNameType.CALENDAR);
 		assertNotNull(request);
 		
 		GetFolderResponse response = ewsClient.getFolder(request);
@@ -197,11 +199,11 @@ public abstract class AbstractIntegrationTest {
 			initializeCredentials();
 
 			CalendarItemType calendarItem = new CalendarItemType();
-			final Date start = DateHelp.parseDateTimePhrase("20131109-1200");
-			final Date end = DateHelp.parseDateTimePhrase("20131109-1300");
+			final Date start = ExchangeDateUtils.parseDateTimePhrase("20131109-1200");
+			final Date end = ExchangeDateUtils.parseDateTimePhrase("20131109-1300");
 
-			calendarItem.setStart(DateHelp.convertDateToXMLGregorianCalendar(start));
-			calendarItem.setEnd(DateHelp.convertDateToXMLGregorianCalendar(end));
+			calendarItem.setStart(ExchangeDateUtils.convertDateToXMLGregorianCalendar(start));
+			calendarItem.setEnd(ExchangeDateUtils.convertDateToXMLGregorianCalendar(end));
 			calendarItem.setSubject("integration test: testCreateCalendarItem");
 			calendarItem.setLocation("test location");
 			BodyType body = new BodyType();
@@ -255,11 +257,11 @@ public abstract class AbstractIntegrationTest {
 		try {
 			initializeCredentials();
 
-			CalendarItemType item1 = constructCalendarItem(DateHelp.parseDateTimePhrase("20121109-1300"), DateHelp.parseDateTimePhrase("20121109-1400"), 
+			CalendarItemType item1 = constructCalendarItem(ExchangeDateUtils.parseDateTimePhrase("20121109-1300"), ExchangeDateUtils.parseDateTimePhrase("20121109-1400"), 
 					"integration test: testCreate3CalendarItems, item1", "test location", "test ran at " + new Date());
-			CalendarItemType item2 = constructCalendarItem(DateHelp.parseDateTimePhrase("20121109-1400"), DateHelp.parseDateTimePhrase("20121109-1500"), 
+			CalendarItemType item2 = constructCalendarItem(ExchangeDateUtils.parseDateTimePhrase("20121109-1400"), ExchangeDateUtils.parseDateTimePhrase("20121109-1500"), 
 					"integration test: testCreate3CalendarItems, item2", "test location", "test ran at " + new Date());
-			CalendarItemType item3 = constructCalendarItem(DateHelp.parseDateTimePhrase("20121109-1500"), DateHelp.parseDateTimePhrase("20121109-1600"), 
+			CalendarItemType item3 = constructCalendarItem(ExchangeDateUtils.parseDateTimePhrase("20121109-1500"), ExchangeDateUtils.parseDateTimePhrase("20121109-1600"), 
 					"integration test: testCreate3CalendarItems, item3", "test location", "test ran at " + new Date());
 
 			CreateItem request = new CreateItem();
@@ -311,11 +313,11 @@ public abstract class AbstractIntegrationTest {
 			initializeCredentials();
 
 			CalendarItemType calendarItem = new CalendarItemType();
-			final Date start = DateHelp.parseDateTimePhrase("20121217-1200");
-			final Date end = DateHelp.parseDateTimePhrase("20121217-1300");
+			final Date start = ExchangeDateUtils.parseDateTimePhrase("20121217-1200");
+			final Date end = ExchangeDateUtils.parseDateTimePhrase("20121217-1300");
 
-			calendarItem.setStart(DateHelp.convertDateToXMLGregorianCalendar(start));
-			calendarItem.setEnd(DateHelp.convertDateToXMLGregorianCalendar(end));
+			calendarItem.setStart(ExchangeDateUtils.convertDateToXMLGregorianCalendar(start));
+			calendarItem.setEnd(ExchangeDateUtils.convertDateToXMLGregorianCalendar(end));
 			calendarItem.setSubject("integration test: testCreateCalendarItem");
 			calendarItem.setLocation("test location");
 			BodyType body = new BodyType();
@@ -463,8 +465,8 @@ public abstract class AbstractIntegrationTest {
 	 */
 	protected CalendarItemType constructCalendarItem(Date startTime, Date endTime, String subject, String location, String bodyText) {
 		CalendarItemType calendarItem = new CalendarItemType();
-		calendarItem.setStart(DateHelp.convertDateToXMLGregorianCalendar(startTime));
-		calendarItem.setEnd(DateHelp.convertDateToXMLGregorianCalendar(endTime));
+		calendarItem.setStart(ExchangeDateUtils.convertDateToXMLGregorianCalendar(startTime));
+		calendarItem.setEnd(ExchangeDateUtils.convertDateToXMLGregorianCalendar(endTime));
 		calendarItem.setSubject(subject);
 		calendarItem.setLocation(location);
 		BodyType body = new BodyType();
@@ -507,8 +509,8 @@ public abstract class AbstractIntegrationTest {
 
 		Duration dur = new Duration();
 
-		XMLGregorianCalendar start = DateHelp.convertDateToXMLGregorianCalendar(startTime); 
-		XMLGregorianCalendar end = DateHelp.convertDateToXMLGregorianCalendar(endTime); 
+		XMLGregorianCalendar start = ExchangeDateUtils.convertDateToXMLGregorianCalendar(startTime); 
+		XMLGregorianCalendar end = ExchangeDateUtils.convertDateToXMLGregorianCalendar(endTime); 
 		dur.setEndTime(end);
 		dur.setStartTime(start);
 
@@ -556,8 +558,8 @@ public abstract class AbstractIntegrationTest {
 		FindItem findItem = new FindItem();
 
 		CalendarViewType calendarView = new CalendarViewType();
-		calendarView.setStartDate(DateHelp.convertDateToXMLGregorianCalendar(startTime));
-		calendarView.setEndDate(DateHelp.convertDateToXMLGregorianCalendar(endTime));
+		calendarView.setStartDate(ExchangeDateUtils.convertDateToXMLGregorianCalendar(startTime));
+		calendarView.setEndDate(ExchangeDateUtils.convertDateToXMLGregorianCalendar(endTime));
 		calendarView.setMaxEntriesReturned(ExchangeOnlineThrottlingPolicy.FIND_ITEM_MAX_ENTRIES_RETURNED);
 		findItem.setCalendarView(calendarView);
 		findItem.setTraversal(ItemQueryTraversalType.SHALLOW);

@@ -16,27 +16,29 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+/**
+ * 
+ */
 package com.microsoft.exchange.ical.model;
 
-import com.microsoft.exchange.types.MailboxTypeType;
-
 import net.fortuna.ical4j.model.parameter.XParameter;
+import net.fortuna.ical4j.model.property.XProperty;
+
+import com.microsoft.exchange.types.ExtendedPropertyType;
+import com.microsoft.exchange.types.PathToExtendedFieldType;
+
 /**
- * XParameter indented to take the value of a {@link MailboxTypeType}
+ * {@link XProperty} intended to store the value from {@link ExtendedPropertyType#getExtendedFieldURI()}.getPropertyId()
  * 
  * @author ctcudd
  *
  */
-public class EmailAddressMailboxType extends XParameter {
+public class PathToExtendedFieldTypePropertyIdParamater extends XParameter {
 
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = 5365130984683399890L;
-	private static final String EMAIL_ADDRESS_MAILBOX_TYPE = "X-EWS-EMAIL-ADDRESS-MAILBOX-TYPE";
-	
-	public EmailAddressMailboxType(MailboxTypeType mailboxTypeType) {
-		super(EMAIL_ADDRESS_MAILBOX_TYPE, mailboxTypeType.value());
+	private static final long serialVersionUID = -8857164759801589763L;
+	public static final String PATH_TO_EXTENDED_FIELD_TYPE_PROPERTY_ID = "X-EWS-PATH-TO-EXTENDED-FIELD-TYPE-PROPERTY-ID";
+
+	public PathToExtendedFieldTypePropertyIdParamater(PathToExtendedFieldType path) {
+		super(PATH_TO_EXTENDED_FIELD_TYPE_PROPERTY_ID,path.getPropertyId().toString());
 	}
-
 }

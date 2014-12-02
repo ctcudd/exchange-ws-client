@@ -86,7 +86,7 @@ public class DateHelpTest {
 	 */
 	@Test
 	public void getXMLGregorianCalendarNow() throws DatatypeConfigurationException{
-		XMLGregorianCalendar xmlGregorianCalendarNow = DateHelp.getXMLGregorianCalendarNow();
+		XMLGregorianCalendar xmlGregorianCalendarNow = ExchangeDateUtils.getXMLGregorianCalendarNow();
 		assertNotNull(xmlGregorianCalendarNow);
 		int xmlTimeZoneOffsetMinutes = xmlGregorianCalendarNow.getTimezone();
 		
@@ -145,7 +145,7 @@ public class DateHelpTest {
 		List<String> availableIDs = Arrays.asList(TimeZone.getAvailableIDs());
 		for(String timeZoneID :availableIDs ){
 			TimeZone currTimeZone = TimeZone.getTimeZone(timeZoneID);
-			XMLGregorianCalendar currXmlCalendar = DateHelp.getXMLGregorianCalendarNow(currTimeZone);
+			XMLGregorianCalendar currXmlCalendar = ExchangeDateUtils.getXMLGregorianCalendarNow(currTimeZone);
 			boolean match = xmlGregorianCalendareMatchesTimeZone(currXmlCalendar,currTimeZone);
 			if(!match)	log.info(currTimeZone.getID() +" "+(match ? "PASSED":"FAILED"));
 		}
@@ -159,7 +159,7 @@ public class DateHelpTest {
 		
 		assertTrue( (end.getMillis() > start.getMillis()) );
 		
-		List<Interval> intervals = DateHelp.generateIntervals(start.toDate(), end.toDate());
+		List<Interval> intervals = ExchangeDateUtils.generateIntervals(start.toDate(), end.toDate());
 		assertNotNull(intervals);
 		assertEquals(2, intervals.size());
 		Interval lastInterval = null;
@@ -181,7 +181,7 @@ public class DateHelpTest {
 		
 		assertTrue( (end.getMillis() > start.getMillis()) );
 		
-		List<Interval> intervals = DateHelp.generateMultipleIntervals(start.toDate(), end.toDate(),4);
+		List<Interval> intervals = ExchangeDateUtils.generateMultipleIntervals(start.toDate(), end.toDate(),4);
 		assertNotNull(intervals);
 		assertEquals(4, intervals.size());
 		Interval lastInterval = null;
