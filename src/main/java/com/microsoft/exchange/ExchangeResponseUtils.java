@@ -46,6 +46,8 @@ import com.microsoft.exchange.types.ResponseClassType;
 import com.microsoft.exchange.types.TimeZoneDefinitionType;
 
 /**
+ * Methods to extract results from various Exchange message responses.
+ * 
  * @author ctcudd
  *
  */
