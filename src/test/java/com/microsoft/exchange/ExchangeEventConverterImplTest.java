@@ -36,7 +36,9 @@ import javax.xml.datatype.XMLGregorianCalendar;
 import net.fortuna.ical4j.model.Calendar;
 import net.fortuna.ical4j.model.ComponentList;
 import net.fortuna.ical4j.model.component.VEvent;
+import net.fortuna.ical4j.model.parameter.CuType;
 import net.fortuna.ical4j.model.parameter.PartStat;
+import net.fortuna.ical4j.model.parameter.Role;
 import net.fortuna.ical4j.model.property.Clazz;
 import net.fortuna.ical4j.model.property.DtStart;
 import net.fortuna.ical4j.model.property.Priority;
@@ -53,6 +55,7 @@ import com.microsoft.exchange.impl.ExchangeEventConverterImpl;
 import com.microsoft.exchange.types.CalendarItemType;
 import com.microsoft.exchange.types.ImportanceChoicesType;
 import com.microsoft.exchange.types.ItemType;
+import com.microsoft.exchange.types.MailboxTypeType;
 import com.microsoft.exchange.types.ResponseTypeType;
 import com.microsoft.exchange.types.SensitivityChoicesType;
 
@@ -353,7 +356,21 @@ public class ExchangeEventConverterImplTest {
 			
 			log.info(p + " ==> "+importance);
 		}
-		
 	}
 	
+	@Test
+	public void convertMailboxType(){
+		for(MailboxTypeType type : MailboxTypeType.values()){
+			CuType cuType = ExchangeEventConverterImpl.convertMailboxTypeTypeToCuType(type, null);
+			if(type.equals(MailboxTypeType.PRIVATE_DL) || type.equals(MailboxTypeType.PUBLIC_DL)){
+				assertEquals(CuType.GROUP, cuType);
+			}else{
+				assertEquals(CuType.INDIVIDUAL, cuType);
+			}
+			
+			cuType = ExchangeEventConverterImpl.convertMailboxTypeTypeToCuType(type, Role.NON_PARTICIPANT);
+			assertEquals(CuType.RESOURCE, cuType);
+		}
+		
+	}
 }

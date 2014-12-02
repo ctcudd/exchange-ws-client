@@ -23,22 +23,20 @@ package com.microsoft.exchange.ical.model;
 
 import net.fortuna.ical4j.model.property.XProperty;
 
+import com.microsoft.exchange.types.CalendarItemType;
 import com.microsoft.exchange.types.FolderIdType;
 
 /**
+ * {@link XProperty} intended to store the value from {@link CalendarItemType#getParentFolderId()}.getChangeKey()
  * @author ctcudd
  *
  */
-public class ItemTypeParentFolderChangeKey extends XProperty {
+public class ItemTypeParentFolderChangeKeyProperty extends XProperty {
 
-	/**
-	 * 
-	 */
 	private static final long serialVersionUID = -5828192510311418283L;
+	public static final String X_EWS_PARENT_FOLDER_CHANGEKEY ="X-EWS-PARENT-FOLDER-CHANGEKEY";
 
-	private static final String X_EWS_PARENT_FOLDER_CHANGEKEY ="X-EWS-PARENT-FOLDER-CHANGEKEY";
-
-	public ItemTypeParentFolderChangeKey(FolderIdType parentFolderId) {
+	public ItemTypeParentFolderChangeKeyProperty(FolderIdType parentFolderId) {
 		super(X_EWS_PARENT_FOLDER_CHANGEKEY, parentFolderId.getChangeKey());
 	}
 

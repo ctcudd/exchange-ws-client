@@ -26,21 +26,17 @@ import com.microsoft.exchange.types.EmailAddressType;
 import net.fortuna.ical4j.model.parameter.XParameter;
 
 /**
- * XParamater intended to hold the value from {@link EmailAddressType}.getRoutingType()
+ * {@link XParameter} intended to hold the value from {@link EmailAddressType}.getRoutingType()
  * 
  * @author ctcudd
  *
  */
-public class EmailAddressRoutingType extends XParameter {
+public class EmailAddressRoutingTypeParamater extends XParameter {
 
-	/**
-	 * 
-	 */
 	private static final long serialVersionUID = 6772316318466614629L;
+	public static final String EMAIL_ADDRESS_ROUTING_TYPE = "X-EWS-EMAIL-ADDRESS-ROUTING-TYPE";
 	
-	private static final String EMAIL_ADDRESS_ROUTING_TYPE = "X-EWS-EMAIL-ADDRESS-ROUTING-TYPE";
-	
-	public EmailAddressRoutingType(String routingType) {
+	public EmailAddressRoutingTypeParamater(String routingType) {
 		super(EMAIL_ADDRESS_ROUTING_TYPE, routingType);
 	}
 

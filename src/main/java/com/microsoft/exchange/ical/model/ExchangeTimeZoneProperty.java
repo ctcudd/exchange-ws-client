@@ -21,22 +21,22 @@
  */
 package com.microsoft.exchange.ical.model;
 
+import com.microsoft.exchange.types.CalendarItemType;
+
 import net.fortuna.ical4j.model.property.XProperty;
 
 /**
+ * {@link XProperty} intended to store the value from {@link CalendarItemType#getTimeZone()}.getId()
+ * 
  * @author ctcudd
  *
  */
 public class ExchangeTimeZoneProperty extends XProperty {
 
-	/**
-	 * 
-	 */
 	private static final long serialVersionUID = 5679555633801009746L;
-	private static final String X_EWS_TIMEZONE ="X-EWS-TIMEZONE";
+	public static final String X_EWS_TIMEZONE ="X-EWS-TIMEZONE";
 
 	public ExchangeTimeZoneProperty(String timeZoneId) {
 		super(X_EWS_TIMEZONE, timeZoneId);
 	}
-
 }
