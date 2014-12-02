@@ -21,25 +21,22 @@
  */
 package com.microsoft.exchange.ical.model;
 
-import com.microsoft.exchange.types.FolderIdType;
-import com.microsoft.exchange.types.ItemIdType;
-
 import net.fortuna.ical4j.model.property.XProperty;
 
+import com.microsoft.exchange.types.CalendarItemType;
+import com.microsoft.exchange.types.FolderIdType;
+
 /**
+ * {@link XProperty} intended to store the value from {@link CalendarItemType#getParentFolderId()}.getId()
  * @author ctcudd
  *
  */
-public class ItemTypeParentFolderId extends XProperty {
+public class ItemTypeParentFolderIdProperty extends XProperty {
 
-	/**
-	 * 
-	 */
 	private static final long serialVersionUID = 3908080047637096789L;
-
-	private static final String X_EWS_PARENT_FOLDER_ID = "X-EWS-PARENT-FOLDER-ID";
+	public static final String X_EWS_PARENT_FOLDER_ID = "X-EWS-PARENT-FOLDER-ID";
 	
-	public ItemTypeParentFolderId(FolderIdType parentFolderId) {
+	public ItemTypeParentFolderIdProperty(FolderIdType parentFolderId) {
 		super(X_EWS_PARENT_FOLDER_ID, parentFolderId.getId());
 	}
 
