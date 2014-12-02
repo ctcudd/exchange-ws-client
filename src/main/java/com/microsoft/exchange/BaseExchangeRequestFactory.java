@@ -60,7 +60,7 @@ import com.microsoft.exchange.types.FolderType;
 import com.microsoft.exchange.types.IndexBasePointType;
 import com.microsoft.exchange.types.IndexedPageViewType;
 import com.microsoft.exchange.types.IsGreaterThanOrEqualToType;
-import com.microsoft.exchange.types.IsLessThanOrEqualToType;
+import com.microsoft.exchange.types.IsGreaterThanType;
 import com.microsoft.exchange.types.IsLessThanType;
 import com.microsoft.exchange.types.ItemChangeType;
 import com.microsoft.exchange.types.ItemIdType;
@@ -1092,7 +1092,7 @@ public abstract class BaseExchangeRequestFactory {
 		JAXBElement<IsGreaterThanOrEqualToType> startSearchExpression = of.createIsGreaterThanOrEqualTo(startType);
 		return startSearchExpression;
 	}
-	
+
 	//================================================================================
     // ItemResponseShapeType
     //================================================================================	
