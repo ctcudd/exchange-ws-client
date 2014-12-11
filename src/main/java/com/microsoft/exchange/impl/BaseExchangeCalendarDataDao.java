@@ -847,7 +847,7 @@ public class BaseExchangeCalendarDataDao {
 			throw new ExchangeRuntimeException("createCalendarItemInternal(upn="+upn+",...) failed "+getMaxRetries()+ " consecutive attempts.");
 		}else {
 			setContextCredentials(upn);
-			DeleteItem request = getRequestFactory().constructDeleteCalendarItems(itemIds, DisposalType.HARD_DELETE, CalendarItemCreateOrDeleteOperationType.SEND_TO_NONE);
+			DeleteItem request = getRequestFactory().constructDeleteCalendarItems(itemIds, DisposalType.HARD_DELETE, CalendarItemCreateOrDeleteOperationType.SEND_TO_ALL_AND_SAVE_COPY);
 
 			try {
 				DeleteItemResponse response = getWebServices().deleteItem(request);
