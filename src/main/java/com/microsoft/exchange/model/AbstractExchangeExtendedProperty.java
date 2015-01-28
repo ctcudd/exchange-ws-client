@@ -5,7 +5,6 @@ package com.microsoft.exchange.model;
 
 import java.util.List;
 
-import org.apache.commons.lang.BooleanUtils;
 import org.springframework.util.CollectionUtils;
 
 import com.microsoft.exchange.types.ExtendedPropertyType;

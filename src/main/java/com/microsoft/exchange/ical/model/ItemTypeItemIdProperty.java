@@ -18,9 +18,9 @@
  */
 package com.microsoft.exchange.ical.model;
 
-import com.microsoft.exchange.types.ItemIdType;
-
 import net.fortuna.ical4j.model.property.XProperty;
+
+import com.microsoft.exchange.types.ItemIdType;
 /**
  * 
  * @author ctcudd

@@ -18,9 +18,9 @@
  */
 package com.microsoft.exchange.ical.model;
 
-import com.microsoft.exchange.types.MailboxTypeType;
-
 import net.fortuna.ical4j.model.parameter.XParameter;
+
+import com.microsoft.exchange.types.MailboxTypeType;
 /**
  * {@link XParameter} indented to take the value of a {@link MailboxTypeType}
  * 

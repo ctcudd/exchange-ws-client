@@ -2,7 +2,6 @@ bootstrap
 .settings
 .classpath
 .project
-exchange.properties
-exchange.PROD.properties
+exchange*.properties
 target
-/target
+

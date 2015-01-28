@@ -21,9 +21,9 @@
  */
 package com.microsoft.exchange.ical.model;
 
-import com.microsoft.exchange.types.CalendarItemType;
-
 import net.fortuna.ical4j.model.property.XProperty;
+
+import com.microsoft.exchange.types.CalendarItemType;
 
 /**
  * {@link XProperty} intended to store the value from {@link CalendarItemType#getStartTimeZone()}.getId()

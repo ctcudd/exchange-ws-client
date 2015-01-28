@@ -20,10 +20,10 @@
  * 
  */
 package com.microsoft.exchange.ical.model;
+import net.fortuna.ical4j.model.property.XProperty;
+
 import com.microsoft.exchange.types.CalendarItemType;
 import com.microsoft.exchange.types.ItemIdType;
-
-import net.fortuna.ical4j.model.property.XProperty;
 
 /**
  * {@link XProperty} intended to store the value from {@link CalendarItemType#getItemId()}.getChangeKey()

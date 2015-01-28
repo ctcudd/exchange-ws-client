@@ -21,11 +21,11 @@
  */
 package com.microsoft.exchange.ical.model;
 
-import com.microsoft.exchange.types.ExtendedPropertyType;
-import com.microsoft.exchange.types.PathToExtendedFieldType;
-
 import net.fortuna.ical4j.model.parameter.XParameter;
 import net.fortuna.ical4j.model.property.XProperty;
+
+import com.microsoft.exchange.types.ExtendedPropertyType;
+import com.microsoft.exchange.types.PathToExtendedFieldType;
 
 /**
  * {@link XProperty} intended to store the value from {@link ExtendedPropertyType#getExtendedFieldURI()}.getPropertyType()

@@ -21,9 +21,9 @@
  */
 package com.microsoft.exchange.ical.model;
 
-import com.microsoft.exchange.types.EmailAddressType;
-
 import net.fortuna.ical4j.model.parameter.XParameter;
+
+import com.microsoft.exchange.types.EmailAddressType;
 
 /**
  * {@link XParameter} intended to hold the value from {@link EmailAddressType}.getRoutingType()
