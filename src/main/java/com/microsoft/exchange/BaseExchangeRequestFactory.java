@@ -137,6 +137,12 @@ public abstract class BaseExchangeRequestFactory {
 	 * @return the {@link FolderQueryTraversalType}
 	 */
 	public abstract FolderQueryTraversalType getFolderQueryTraversal();
+	
+	/**
+	 * @return the {@link ItemQueryTraversalType}.
+	 */
+	public abstract ItemQueryTraversalType getItemQueryTraversal();
+	
 	/**
 	 * The {@link ExtendedPropertyType}'s identified by this {@link Collection} of {@link PathToExtendedFieldType} will be returned by all GetItem operations.
 	 */
@@ -658,6 +664,10 @@ public abstract class BaseExchangeRequestFactory {
 		return constructIndexedPageViewFindItemIdsShallow(INIT_BASE_OFFSET, getMaxFindItems(), restriction, folderIds);
 	}
 
+	protected FindItem constructIndexedPageViewFindNextItemIdsShallow(int offset, RestrictionType restriction, Collection<? extends BaseFolderIdType> folderIds) {
+		return constructIndexedPageViewFindItemIdsShallow(offset, getMaxFindItems(), restriction, folderIds);
+	}
+	
 	/**
 	 * Constructs a {@link FindItem} request using an {@link IndexedPageViewType} (recurrence will not be expanded)
 	 * This method performs a Shallow search and will not search sub folders 
@@ -669,7 +679,7 @@ public abstract class BaseExchangeRequestFactory {
 	 * @return
 	 */
 	protected FindItem constructIndexedPageViewFindItemIdsShallow(int offset, int maxItems,  RestrictionType restriction, Collection<? extends BaseFolderIdType> folderIds) {
-		return constructIndexedPageViewFindItem(offset, maxItems, DefaultShapeNamesType.ID_ONLY, ItemQueryTraversalType.SHALLOW, restriction, folderIds);
+		return constructIndexedPageViewFindItem(offset, maxItems, DefaultShapeNamesType.ID_ONLY, getItemQueryTraversal(), restriction, folderIds);
 	}
 	
 	/**
@@ -1122,22 +1132,34 @@ public abstract class BaseExchangeRequestFactory {
 		expressions.add(getCalendarItemIsCancelledSearchExpression());
 		return constructAndRestriction(expressions);
 	}
-
-	protected JAXBElement<IsEqualToType> getCalendarItemIsCancelledSearchExpression(){
+	
+	
+	protected RestrictionType constructFindCancelledCalendarItemsRestriction(){
+		RestrictionType restriction = new RestrictionType();
+		restriction.setSearchExpression(getCalendarItemIsCancelledSearchExpression());
+		return restriction;
+	}
+	
+	/**
+	 * @see https://msdn.microsoft.com/en-us/library/ee202361(v=exchg.80).aspx
+	 * @return
+	 */
+	protected JAXBElement<IsGreaterThanOrEqualToType> getCalendarItemIsCancelledSearchExpression(){
 		ConstantValueType isCancelledValue = new ConstantValueType();
-		isCancelledValue.setValue(BooleanUtils.toStringTrueFalse(true));
+		isCancelledValue.setValue("4");
 		
 		FieldURIOrConstantType constant = new FieldURIOrConstantType();
 		constant.setConstant(isCancelledValue);
 		
 		PathToUnindexedFieldType path = new PathToUnindexedFieldType();
-		path.setFieldURI(UnindexedFieldURIType.CALENDAR_IS_CANCELLED);
+		//path.setFieldURI(UnindexedFieldURIType.CALENDAR_IS_CANCELLED);
+		path.setFieldURI(UnindexedFieldURIType.CALENDAR_APPOINTMENT_STATE);
 		
-		IsEqualToType equalToType = new IsEqualToType();	
+		IsGreaterThanOrEqualToType equalToType = new IsGreaterThanOrEqualToType();	
 		equalToType.setFieldURIOrConstant(constant);
 		equalToType.setPath(getObjectFactory().createFieldURI(path));
 		
-		return getObjectFactory().createIsEqualTo(equalToType);
+		return getObjectFactory().createIsGreaterThanOrEqualTo(equalToType);
 	}
 	
 	/**

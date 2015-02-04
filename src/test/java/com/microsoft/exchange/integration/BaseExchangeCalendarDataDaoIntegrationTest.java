@@ -83,7 +83,6 @@ public class BaseExchangeCalendarDataDaoIntegrationTest {
 	
 	@Before
 	public void setup(){
-		upn = "cclose@wisc.edu";
 				//"Test1-DoIT@aims.wisc.edu";
 	}
 
@@ -176,7 +175,16 @@ public class BaseExchangeCalendarDataDaoIntegrationTest {
 	}
 	
 	@Test
+	public void purgeCancelledCalendarItems(){
+		upn ="cclose@wisc.edu";
+		BaseFolderType primaryCalendarFolder = exchangeCalendarDataDao.getPrimaryCalendarFolder(upn);
+		boolean purged = exchangeCalendarDataDao.purgeCancelledCalendarItems(upn, primaryCalendarFolder.getFolderId() );
+		assertTrue(purged);
+	}
+	
+	@Test
 	public void getCancelledCalendarItemsByDateRangePageViewFindItem(){
+		upn ="cclose@wisc.edu";
 		Date now  = new Date();
 		Date startDate = DateUtils.addDays(now, -100);
 		Date endDate = DateUtils.addDays(now, 100);
@@ -187,19 +195,37 @@ public class BaseExchangeCalendarDataDaoIntegrationTest {
 		FindItem request = exchangeCalendarDataDao.getRequestFactory().constructIndexedPageViewFindItemCancelledIdsByDateRange(startDate, endDate, Collections.singleton(primaryCalendarFolder.getFolderId()));
 		FindItemResponse response = exchangeCalendarDataDao.getWebServices().findItem(request);
 		Pair<Set<ItemIdType>, Integer> parsed = exchangeCalendarDataDao.getResponseUtils().parseFindItemIdResponse(response);
+		Integer nextOffset = parsed.getRight();
 		
-		boolean deleted = exchangeCalendarDataDao.deleteCalendarItems(upn, parsed.getLeft());
-		assertTrue(deleted);
-//		Collection<CalendarItemType> calendarItems = exchangeCalendarDataDao.getCalendarItems(upn, parsed.getLeft());
-//		log.info("Found "+calendarItems.size()+" calendarItems");
-//		for(CalendarItemType c :  calendarItems){
-//			assertTrue(c.isIsCancelled());
-//		}
+		Collection<CalendarItemType> calendarItems = exchangeCalendarDataDao.getCalendarItems(upn, parsed.getLeft());
+		log.info("Found "+calendarItems.size()+" calendarItems");
+		for(CalendarItemType c :  calendarItems){
+			if(!c.isIsCancelled()){
+				log.info("fail");
+			}
+		}
+		assertTrue(exchangeCalendarDataDao.deleteCalendarItems(upn,  parsed.getLeft()));
+		while(nextOffset > 0){
+			request = exchangeCalendarDataDao.getRequestFactory().constructIndexedPageViewFindItemCancelledIdsByDateRange(nextOffset, startDate, endDate, Collections.singleton(primaryCalendarFolder.getFolderId()));
+		    response = exchangeCalendarDataDao.getWebServices().findItem(request);
+		    parsed = exchangeCalendarDataDao.getResponseUtils().parseFindItemIdResponse(response);
+			nextOffset = parsed.getRight();
+			
+			calendarItems = exchangeCalendarDataDao.getCalendarItems(upn, parsed.getLeft());
+			log.info("Found "+calendarItems.size()+" calendarItems");
+			for(CalendarItemType c :  calendarItems){
+				assertTrue(c.isIsCancelled());
+			}
+			assertTrue(exchangeCalendarDataDao.deleteCalendarItems(upn,  parsed.getLeft()));
+		}
+
+		
+
 	}
 	
 	@Test
 	public void getCalendarByDateRangePageViewFindItem(){
-		//upn="tbrunner2@wisc.edu";
+
 		Date now  = new Date();
 		Date startDate = DateUtils.addDays(now, -100);
 		Date endDate = DateUtils.addDays(now, 100);

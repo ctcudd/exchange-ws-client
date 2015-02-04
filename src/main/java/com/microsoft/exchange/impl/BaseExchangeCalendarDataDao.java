@@ -541,7 +541,6 @@ public class BaseExchangeCalendarDataDao {
 		Pair<Set<ItemIdType>, Integer> pair = findItemIdsInternal(upn, request, 0);
 		Set<ItemIdType> itemIds = pair.getLeft();
 		Integer nextOffset = pair.getRight();
-		log.debug("found ");
 		while(nextOffset > 0){
 			request = getRequestFactory().constructFindNextItemIdSet(nextOffset, folderIds);
 			pair = findItemIdsInternal(upn, request, 0);
@@ -1031,6 +1030,30 @@ public class BaseExchangeCalendarDataDao {
 		return true;
 	}
 	
+	public boolean purgeCancelledCalendarItems(String upn, FolderIdType folderId){
+		BaseFolderType primaryCalendarFolder = getPrimaryCalendarFolder(upn);
+		Set<FolderIdType> primaryCalendarFolderId = Collections.singleton(primaryCalendarFolder.getFolderId());
+		FindItem request = getRequestFactory().constructIndexedPageViewFindItemCancelledCalendarItemIds(primaryCalendarFolderId);
+		FindItemResponse response = getWebServices().findItem(request);
+		Pair<Set<ItemIdType>, Integer> results = getResponseUtils().parseFindItemIdResponse(response);
+		Set<ItemIdType> itemIds = results.getLeft();
+		Integer nextOffset = results.getRight();
+		while(itemIds.size() > 0){
+			if(deleteCalendarItems(upn, itemIds)){
+				if(nextOffset > 0){
+					request = getRequestFactory().constructIndexedPageViewFindItemCancelledCalendarItemIds(nextOffset, primaryCalendarFolderId);
+					response = getWebServices().findItem(request);
+					results = getResponseUtils().parseFindItemIdResponse(response);
+				
+					itemIds = results.getLeft();
+					nextOffset = results.getRight();
+				}
+			}else{
+				return false;
+			}
+		}
+		return true;
+	}
 	//================================================================================
     // DeleteFolder
     //================================================================================	

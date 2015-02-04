@@ -64,6 +64,7 @@ import com.microsoft.exchange.types.FolderType;
 import com.microsoft.exchange.types.FreeBusyViewOptions;
 import com.microsoft.exchange.types.IndexedPageViewType;
 import com.microsoft.exchange.types.ItemIdType;
+import com.microsoft.exchange.types.ItemQueryTraversalType;
 import com.microsoft.exchange.types.MailboxData;
 import com.microsoft.exchange.types.MessageDispositionType;
 import com.microsoft.exchange.types.MessageType;
@@ -104,6 +105,7 @@ public class ExchangeRequestFactory extends BaseExchangeRequestFactory{
 	private DisposalType folderDisposalType = DisposalType.SOFT_DELETE;
 	private DisposalType itemDisposalType = DisposalType.HARD_DELETE;
 	private FolderQueryTraversalType folderQueryTraversal = FolderQueryTraversalType.DEEP;
+	private ItemQueryTraversalType itemQueryTraversalType = ItemQueryTraversalType.SHALLOW;
 	private MessageDispositionType messageDisposition = MessageDispositionType.SEND_AND_SAVE_COPY;
     private ResolveNamesSearchScopeType resolveNamesSearchScope = ResolveNamesSearchScopeType.ACTIVE_DIRECTORY_CONTACTS;
     //================================================================================
@@ -128,6 +130,14 @@ public class ExchangeRequestFactory extends BaseExchangeRequestFactory{
 	public DisposalType getFolderDisposalType() {
 		return folderDisposalType;
 	}
+	/**
+	 * @return the itemQueryTraversalType
+	 */
+	@Override
+	public ItemQueryTraversalType getItemQueryTraversal() {
+		return itemQueryTraversalType;
+	}
+	
 	/* (non-Javadoc)
 	 * @see com.microsoft.exchange.BaseExchangeRequestFactory#getItemExtendedPropertyPaths()
 	 */
@@ -728,6 +738,30 @@ public class ExchangeRequestFactory extends BaseExchangeRequestFactory{
 		RestrictionType restriction = constructFindCalendarItemsByDateRangeRestriction(startTime, endTime);
 		return constructIndexedPageViewFindFirstItemIdsShallow(restriction, baseFolderIds);
 	}
+
+	public FindItem constructIndexedPageViewFindItemCancelledCalendarItemIds(Collection<FolderIdType> folderIds) {
+		Collection<? extends BaseFolderIdType> baseFolderIds = folderIds;
+		if(CollectionUtils.isEmpty(baseFolderIds)) {
+			DistinguishedFolderIdType distinguishedFolderIdType = new DistinguishedFolderIdType();
+			distinguishedFolderIdType.setId(DistinguishedFolderIdNameType.CALENDAR);
+			baseFolderIds = Collections.singleton(distinguishedFolderIdType);
+		}
+		
+		RestrictionType restriction = constructFindCancelledCalendarItemsRestriction();
+		return constructIndexedPageViewFindFirstItemIdsShallow(restriction, baseFolderIds);
+	}
+	
+	public FindItem constructIndexedPageViewFindItemCancelledCalendarItemIds(int offset, Collection<FolderIdType> folderIds){
+		Collection<? extends BaseFolderIdType> baseFolderIds = folderIds;
+		if(CollectionUtils.isEmpty(baseFolderIds)) {
+			DistinguishedFolderIdType distinguishedFolderIdType = new DistinguishedFolderIdType();
+			distinguishedFolderIdType.setId(DistinguishedFolderIdNameType.CALENDAR);
+			baseFolderIds = Collections.singleton(distinguishedFolderIdType);
+		}
+		
+		RestrictionType restriction = constructFindCancelledCalendarItemsRestriction();
+		return constructIndexedPageViewFindNextItemIdsShallow(offset, restriction, folderIds);
+	}
 	
 	public FindItem constructIndexedPageViewFindItemCancelledIdsByDateRange(Date startTime, Date endTime, Collection<FolderIdType> folderIds) {
 		Collection<? extends BaseFolderIdType> baseFolderIds = folderIds;
@@ -737,8 +771,20 @@ public class ExchangeRequestFactory extends BaseExchangeRequestFactory{
 			baseFolderIds = Collections.singleton(distinguishedFolderIdType);
 		}
 		
-		RestrictionType restriction = constructFindCalendarItemsByDateRangeRestriction(startTime, endTime);
+		RestrictionType restriction = constructFindCancelledCalendarItemsByDateRangeRestriction(startTime, endTime);
 		return constructIndexedPageViewFindFirstItemIdsShallow(restriction, baseFolderIds);
+	}
+	
+	public FindItem constructIndexedPageViewFindItemCancelledIdsByDateRange(int offset, Date startTime, Date endTime, Collection<FolderIdType> folderIds) {
+		Collection<? extends BaseFolderIdType> baseFolderIds = folderIds;
+		if(CollectionUtils.isEmpty(baseFolderIds)) {
+			DistinguishedFolderIdType distinguishedFolderIdType = new DistinguishedFolderIdType();
+			distinguishedFolderIdType.setId(DistinguishedFolderIdNameType.CALENDAR);
+			baseFolderIds = Collections.singleton(distinguishedFolderIdType);
+		}
+		
+		RestrictionType restriction = constructFindCancelledCalendarItemsByDateRangeRestriction(startTime, endTime);
+		return constructIndexedPageViewFindNextItemIdsShallow(offset, restriction, baseFolderIds);
 	}
 	
 	/**

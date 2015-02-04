@@ -434,7 +434,7 @@ public class ExchangeResponseUtilsImpl implements ExchangeResponseUtils  {
 				foundItemIds.add(it.getItemId());
 			}
 			
-			log.info("parseFindItemIdResponse: foundItems="+foundItemIds.size()+", totalItemsInview="+totalItemsInView+" , nextOffset"+nextOffset+", includesLast="+includesLastItemInRange );
+			log.info("parseFindItemIdResponse: foundItems="+foundItemIds.size()+", totalItemsInview="+totalItemsInView+" , nextOffset="+nextOffset+", includesLast="+includesLastItemInRange );
 		}
 		
 		Pair<Set<ItemIdType>, Integer> pair = Pair.of(foundItemIds, nextOffset);
