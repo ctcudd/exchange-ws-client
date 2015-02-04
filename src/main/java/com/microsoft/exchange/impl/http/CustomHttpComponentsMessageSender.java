@@ -31,6 +31,8 @@ import org.apache.http.client.protocol.ClientContext;
 import org.apache.http.conn.ClientConnectionManager;
 import org.apache.http.impl.auth.BasicScheme;
 import org.apache.http.impl.auth.DigestScheme;
+import org.apache.http.impl.auth.NTLMSchemeFactory;
+import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.conn.PoolingClientConnectionManager;
 import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
 import org.apache.http.protocol.BasicHttpContext;
@@ -45,6 +47,7 @@ import com.microsoft.exchange.impl.ExchangeOnlineThrottlingPolicy;
 public class CustomHttpComponentsMessageSender extends
 		HttpComponentsMessageSender {
 
+	private NTLMSchemeFactory ntlmSchemeFactory = new  NTLMSchemeFactory();
 	private boolean preemptiveAuthEnabled = false;
 	private boolean ntlmAuthEnabled = false;
 	private AuthScope preemptiveAuthScope = AuthScope.ANY;
@@ -108,7 +111,13 @@ public class CustomHttpComponentsMessageSender extends
 	public void afterPropertiesSet() throws Exception {
 		super.afterPropertiesSet();
 		if(isPreemptiveAuthEnabled()) {
-			this.preemptiveAuthScheme = identifyScheme(getPreemptiveAuthScope().getScheme());
+			if(isNtlmAuthEnabled()){
+				this.preemptiveAuthScheme = ntlmSchemeFactory.newInstance(getHttpClient().getParams());
+			}else{
+				this.preemptiveAuthScheme = identifyScheme(getPreemptiveAuthScope().getScheme());
+			}
+			DefaultHttpClient httpClient = (DefaultHttpClient) getHttpClient();
+			httpClient.addRequestInterceptor(new PreemptiveAuthInterceptor());
 		}
 		boolean overrideSuccess = false;
 		if(defaultMaxPerRouteOverride != null) {

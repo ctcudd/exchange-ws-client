@@ -28,7 +28,6 @@ import static org.junit.Assert.assertNotNull;
 
 import java.io.ByteArrayOutputStream;
 import java.util.Date;
-import java.util.List;
 import java.util.Set;
 
 import javax.xml.bind.JAXBContext;

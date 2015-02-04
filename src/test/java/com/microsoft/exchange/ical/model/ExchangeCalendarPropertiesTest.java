@@ -8,10 +8,8 @@ import static junit.framework.Assert.assertNotNull;
 
 import org.junit.Test;
 
-import com.microsoft.exchange.types.ExtendedPropertyType;
 import com.microsoft.exchange.types.FolderIdType;
 import com.microsoft.exchange.types.ItemIdType;
-import com.microsoft.exchange.types.PathToExtendedFieldType;
 /**
  * @author ctcudd
  *

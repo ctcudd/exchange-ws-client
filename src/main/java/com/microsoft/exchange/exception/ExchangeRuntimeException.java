@@ -35,23 +35,7 @@ public class ExchangeRuntimeException extends RuntimeException {
 		super(arg0);
 	}
 	
-	class ExchangeTimeoutRuntimeException extends ExchangeRuntimeException{
-
-		/**
-		 * 
-		 */
-		private static final long serialVersionUID = 7481473941096224884L;
-
-		public ExchangeTimeoutRuntimeException(Throwable arg0) {
-			super(arg0);
-		}
-
-
-		public ExchangeTimeoutRuntimeException(String arg0) {
-			super(arg0);
-		}
-		
+	public ExchangeRuntimeException(String arg0, Throwable arg1){
+		super(arg0, arg1);
 	}
-	
-
 }

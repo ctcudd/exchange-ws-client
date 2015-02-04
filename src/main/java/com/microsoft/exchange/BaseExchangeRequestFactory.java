@@ -6,11 +6,13 @@ package com.microsoft.exchange;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 
 import javax.xml.bind.JAXBElement;
 import javax.xml.datatype.XMLGregorianCalendar;
 
+import org.apache.commons.lang.BooleanUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.Validate;
 import org.apache.commons.logging.Log;
@@ -21,6 +23,7 @@ import com.microsoft.exchange.messages.CreateFolder;
 import com.microsoft.exchange.messages.CreateItem;
 import com.microsoft.exchange.messages.DeleteFolder;
 import com.microsoft.exchange.messages.DeleteItem;
+import com.microsoft.exchange.messages.EmptyFolder;
 import com.microsoft.exchange.messages.FindFolder;
 import com.microsoft.exchange.messages.FindItem;
 import com.microsoft.exchange.messages.GetFolder;
@@ -59,6 +62,7 @@ import com.microsoft.exchange.types.FolderResponseShapeType;
 import com.microsoft.exchange.types.FolderType;
 import com.microsoft.exchange.types.IndexBasePointType;
 import com.microsoft.exchange.types.IndexedPageViewType;
+import com.microsoft.exchange.types.IsEqualToType;
 import com.microsoft.exchange.types.IsGreaterThanOrEqualToType;
 import com.microsoft.exchange.types.IsLessThanType;
 import com.microsoft.exchange.types.ItemChangeType;
@@ -83,6 +87,7 @@ import com.microsoft.exchange.types.PathToExtendedFieldType;
 import com.microsoft.exchange.types.PathToUnindexedFieldType;
 import com.microsoft.exchange.types.ResolveNamesSearchScopeType;
 import com.microsoft.exchange.types.RestrictionType;
+import com.microsoft.exchange.types.SearchExpressionType;
 import com.microsoft.exchange.types.SetFolderFieldType;
 import com.microsoft.exchange.types.SetItemFieldType;
 import com.microsoft.exchange.types.SortDirectionType;
@@ -91,21 +96,21 @@ import com.microsoft.exchange.types.TaskType;
 import com.microsoft.exchange.types.UnindexedFieldURIType;
 
 /**
+ * 
  * @author ctcudd
- *
  */
 public abstract class BaseExchangeRequestFactory {
 	
-
-	protected static final int EWS_FIND_ITEM_MAX = 1000;
-	
+    //================================================================================
+    // Static Fields
+    //================================================================================
+	protected static final int FIND_ITEM_MAX 	= 1000;
 	protected static final int INIT_BASE_OFFSET = 0;
-	
-	protected final Log log = LogFactory.getLog(this.getClass());
 	
     //================================================================================
     // Properties
     //================================================================================
+	protected final Log log = LogFactory.getLog(this.getClass());
 	/**
 	 * The default policy in Exchange limits the page size to 1000 items.
 	 * Setting the page size to a value that is greater than this number has no
@@ -116,28 +121,72 @@ public abstract class BaseExchangeRequestFactory {
 	 *      throttling in Exchange</a>"
 	 */
 	private int maxFindItems = 500;
-	public int getMaxFindItems() {
-		return maxFindItems;
-	}
-	public void setMaxFindItems(int maxFindItems) {
-		if(maxFindItems < EWS_FIND_ITEM_MAX){
-			this.maxFindItems = maxFindItems;
-		}else{
-			this.maxFindItems = EWS_FIND_ITEM_MAX;
-			log.warn("maxFindItems cannot exceed "+EWS_FIND_ITEM_MAX);
-		}
-	}
 	
+    //================================================================================
+    // Getters
+    //================================================================================
+	/**
+	 * @return the {@link AffectedTaskOccurrencesType} to use with operations on {@link TaskType}s.
+	 */
+	public abstract AffectedTaskOccurrencesType getAffectedTaskOccurrencesType();
+	/**
+	 * @return the {@link ConflictResolutionType} to use when updating items.
+	 */
+	public abstract ConflictResolutionType getConflictResolution();
+	/**
+	 * @return the {@link FolderQueryTraversalType}
+	 */
+	public abstract FolderQueryTraversalType getFolderQueryTraversal();
 	/**
 	 * The {@link ExtendedPropertyType}'s identified by this {@link Collection} of {@link PathToExtendedFieldType} will be returned by all GetItem operations.
 	 */
 	public abstract Collection<PathToExtendedFieldType> getItemExtendedPropertyPaths();
-	
 	/**
-	 * The {@link ExtendedPropertyType}'s identified by this  {@link Collection} of {@link PathToExtendedFieldType} will be returned by all GetFolder operations.
+	 * The {@link ExtendedPropertyType}s identified by this  {@link Collection} of {@link PathToExtendedFieldType} will be returned by all GetFolder operations.
 	 */
 	public abstract Collection<PathToExtendedFieldType> getFolderExtendedPropertyPaths();
-
+	/**
+	 * @return the {@link CalendarItemCreateOrDeleteOperationType} to use when performing operations on {@link CalendarItemType}s.
+	 */
+	public abstract CalendarItemCreateOrDeleteOperationType getSendMeetingInvitations();
+	/**
+	 * @return
+	 */
+	public abstract CalendarItemUpdateOperationType getSendMeetingUpdates();
+	/**
+	 * @return the maximum number of items that will be retrieved in a {@link FindItem} operation.
+	 */
+	public final int getMaxFindItems() {
+		if(maxFindItems > FIND_ITEM_MAX){
+			maxFindItems = FIND_ITEM_MAX;
+			log.warn("maxFindItems cannot exceed "+FIND_ITEM_MAX);
+		}
+		return maxFindItems;
+	}
+	/**
+	 * @return the {@link MessageDispositionType} to use when creating {@link MessageType}s.  This does not apply to {@link CalendarItemType} or {@link TaskType}.
+	 */
+	public abstract MessageDispositionType getMessageDisposition();
+	
+	public abstract ResolveNamesSearchScopeType getResolveNamesSearchScope();
+	
+	//================================================================================
+    // Setters
+    //================================================================================	
+	/**
+	 * @param maxFindItems the maxFindItems to set.
+	 */
+	public final void setMaxFindItems(int maxFindItems) {
+		if(maxFindItems < FIND_ITEM_MAX){
+			this.maxFindItems = maxFindItems;
+		}else{
+			this.maxFindItems = FIND_ITEM_MAX;
+			log.warn("maxFindItems cannot exceed "+FIND_ITEM_MAX);
+		}
+	}
+    //================================================================================
+    // MEAT
+    //================================================================================	
 	/**
 	 * Construct a {@link NonEmptyArrayOfPathsToElementType} given a collection of {@link PathToExtendedFieldType}s
 	 * @param paths
@@ -170,11 +219,6 @@ public abstract class BaseExchangeRequestFactory {
 		return getObjectFactory().createExtendedFieldURI(path);
 	}
 	
-	private CalendarItemCreateOrDeleteOperationType defaultCalendarCreateSendTo = CalendarItemCreateOrDeleteOperationType.SEND_TO_NONE;
-	public CalendarItemCreateOrDeleteOperationType getDefaultCalendarCreateSendTo(){
-		return defaultCalendarCreateSendTo;
-	}
-	
 	/**
 	 * Returns a new instance of {@link ObjectFactory}
 	 * @return {@link ObjectFactory}
@@ -188,6 +232,13 @@ public abstract class BaseExchangeRequestFactory {
     // DistinguishedFolderIdType 
     //================================================================================
 
+	/**
+	 * @category FolderId
+	 * @return {@link DistinguishedFolderIdType} Representing the Primary Message folder id (aka the INBOX)
+	 */
+	protected final static DistinguishedFolderIdType getPrimaryMessageDistinguishedFolderId(){
+		return getParentDistinguishedFolderId(DistinguishedFolderIdNameType.INBOX);
+	}
 	/**
 	 * @category FolderId
 	 * @return {@link DistinguishedFolderIdType} Representing the Primary CALENDAR folder id
@@ -291,6 +342,27 @@ public abstract class BaseExchangeRequestFactory {
     // CreateItem
     //================================================================================
 	/**
+	 * Construct a {@link CreateItem} request specific for creating {@link CalendarItemType} objects.
+	 * 
+	 * This method purposefully omits {@link MessageDispositionType} as it only applies to email messages.
+	 * 
+	 * If the {@code sendTo} paramater is omitted {@link BaseExchangeRequestFactory#getDefaultCalendarCreateSendTo()} is used.
+	 * @see <a href="http://msdn.microsoft.com/en-us/library/office/aa563060(v=exchg.150).aspx">Creating Appointments in Exchange 2010
+	 * @see <a href="http://msdn.microsoft.com/en-us/library/office/aa565209(v=exchg.150).aspx">CreateItem</a>
+	 * @category CreateItem CalendarItem
+	 * 
+	 * @param calendarItems
+	 * @param sendTo
+	 * @param folderId
+	 * @return {@link CreateItem}
+	 */
+	protected final CreateItem constructCreateCalendarItem(
+			Collection<CalendarItemType> calendarItems,
+			CalendarItemCreateOrDeleteOperationType sendTo,
+			FolderIdType folderId) {
+		return constructCreateItemInternal(calendarItems, DistinguishedFolderIdNameType.CALENDAR, null, sendTo, folderId);
+	}
+	/**
 	 * Construct a {@link CreateItem} request
 	 * @param list
 	 * @param parent
@@ -299,7 +371,7 @@ public abstract class BaseExchangeRequestFactory {
 	 * @param folderIdType
 	 * @return a {@link CreateItem} request
 	 */
-	private CreateItem constructCreateItemInternal(Collection<? extends ItemType> list,
+	private final CreateItem constructCreateItemInternal(Collection<? extends ItemType> list,
 			DistinguishedFolderIdNameType parent,
 			MessageDispositionType dispositionType,
 			CalendarItemCreateOrDeleteOperationType sendTo,
@@ -331,33 +403,7 @@ public abstract class BaseExchangeRequestFactory {
 			request.setSendMeetingInvitations(sendTo);
 		}
 		return request;
-	}
-	
-	/**
-	 * Construct a {@link CreateItem} request specific for creating {@link CalendarItemType} objects.
-	 * 
-	 * This method purposefully omits {@link MessageDispositionType} as it only applies to email messages.
-	 * 
-	 * If the {@code sendTo} paramater is omitted {@link BaseExchangeRequestFactory#getDefaultCalendarCreateSendTo()} is used.
-	 * @see <a href="http://msdn.microsoft.com/en-us/library/office/aa563060(v=exchg.150).aspx">Creating Appointments in Exchange 2010
-	 * @see <a href="http://msdn.microsoft.com/en-us/library/office/aa565209(v=exchg.150).aspx">CreateItem</a>
-	 * @param list
-	 * @param parent
-	 * @param sendTo
-	 * @param folderIdType
-	 *            - optional. The item will be saved in the Primary calendar
-	 *            folder if omitted
-	 * @return {@link CreateItem}
-	 */
-	protected CreateItem constructCreateCalendarItemInternal(Collection<CalendarItemType> list,
-			CalendarItemCreateOrDeleteOperationType sendTo,
-			FolderIdType folderIdType) {
-		if(null == sendTo){
-			sendTo = getDefaultCalendarCreateSendTo();
-		}
-		return constructCreateItemInternal(list, DistinguishedFolderIdNameType.CALENDAR, null, sendTo, folderIdType);
-	}
-	
+	}	
 	/**
 	 * Construct a {@link CreateItem} request specific for creating {@link TaskType} objects
 	 * This method purposefully omits {@link MessageDispositionType} as it only applies to email messages.
@@ -369,7 +415,7 @@ public abstract class BaseExchangeRequestFactory {
 	 * @param folderIdType - optional.  The item will be saved in the Primary Tasks folder if omitted
 	 * @return {@link CreateItem} 
 	 */
-	public CreateItem constructCreateTaskItem(Collection<TaskType> list,
+	protected final CreateItem constructCreateTaskItem(Collection<TaskType> list,
 			CalendarItemCreateOrDeleteOperationType sendTo,
 			FolderIdType folderIdType) {
 		return constructCreateItemInternal(list, DistinguishedFolderIdNameType.TASKS, null, sendTo, folderIdType);
@@ -400,10 +446,7 @@ public abstract class BaseExchangeRequestFactory {
 	 * @return {@link CreateItem} 
 	 */
 	protected CreateItem constructCreateMessageItemInternal(Collection<MessageType> list, FolderIdType folderIdType) {
-		DistinguishedFolderIdNameType parent = DistinguishedFolderIdNameType.INBOX;
-		MessageDispositionType disposition = MessageDispositionType.SEND_ONLY;
-		CalendarItemCreateOrDeleteOperationType sendTo = CalendarItemCreateOrDeleteOperationType.SEND_ONLY_TO_ALL;
-		return constructCreateItemInternal(list, parent, disposition, sendTo, folderIdType);
+		return constructCreateItemInternal(list, DistinguishedFolderIdNameType.INBOX, getMessageDisposition(), null, folderIdType);
 	}
 
 	//================================================================================
@@ -418,10 +461,9 @@ public abstract class BaseExchangeRequestFactory {
 	 * @param changes
 	 * @return
 	 */
-	public final UpdateItem constructUpdateCalendarItem(CalendarItemType calendarItem, NonEmptyArrayOfItemChangesType changes){
+	public UpdateItem constructUpdateCalendarItem(CalendarItemType calendarItem, NonEmptyArrayOfItemChangesType changes){
 		UpdateItem updateItem = new UpdateItem();
-		//auto resolve conflicting changes
-		updateItem.setConflictResolution(ConflictResolutionType.AUTO_RESOLVE);
+		updateItem.setConflictResolution(getConflictResolution());
 		updateItem.setItemChanges(changes);
 		
 		//messageDisposition required only for message types
@@ -430,8 +472,10 @@ public abstract class BaseExchangeRequestFactory {
 		TargetFolderIdType targetFolderId = new TargetFolderIdType();
 		targetFolderId.setFolderId(calendarItem.getParentFolderId());
 		
+		// TODO the update will fail if  null == calendarItem.getParentFolderId().  Consider throwing / warning here.
+		
 		updateItem.setSavedItemFolderId(targetFolderId);
-		updateItem.setSendMeetingInvitationsOrCancellations(CalendarItemUpdateOperationType.SEND_ONLY_TO_CHANGED);
+		updateItem.setSendMeetingInvitationsOrCancellations(getSendMeetingUpdates());
 		return updateItem;
 	}
 	
@@ -639,14 +683,9 @@ public abstract class BaseExchangeRequestFactory {
 	 * @return
 	 */	
 	private FindItem constructIndexedPageViewFindItem(int offset, int maxItems, DefaultShapeNamesType baseShape, ItemQueryTraversalType traversalType, RestrictionType restriction, Collection<? extends BaseFolderIdType> folderIds) {
-		if(maxItems > EWS_FIND_ITEM_MAX){
-			log.warn("The default policy in Exchange limits the page size to 1000 items. Setting the page size to a value that is greater than this number has no practical effect. --http://msdn.microsoft.com/en-us/library/office/jj945066(v=exchg.150).aspx#bk_PolicyParameters");
-		}
-		//use indexed view as restrictions cannot be applied to calendar view
+		
 		IndexedPageViewType view = constructIndexedPageView(offset,maxItems,false);
 		
-		//only return id,  note you can return a limited set of additional properties
-		// 	see:http://msdn.microsoft.com/en-us/library/exchange/aa563810(v=exchg.140).aspx
 		ItemResponseShapeType responseShape = constructTextualItemResponseShapeInternal(baseShape);
 		
 		FieldOrderType sortOrder = constructSortOrder();
@@ -701,18 +740,32 @@ public abstract class BaseExchangeRequestFactory {
     // DeleteItem
     //================================================================================	
 	/**
-	 * Construct a {@link DeleteItem} request
-	 * 
-	 * @param arrayOfItemIds
+	 * public DeleteItem constructDeleteItem
+	 * @see https://msdn.microsoft.com/en-us/library/office/aa562961(v=exchg.140).aspx
+	 * @see https://msdn.microsoft.com/en-us/library/office/bb204091(v=exchg.140).aspx
+	 * @param itemIds
+	 *            - Contains an array of items, occurrence items, and recurring
+	 *            master items to delete from a mailbox in the Exchange store.
+	 *            The DeleteItem Operation can be performed on any item type
 	 * @param disposalType
-	 * @param sendTo
+	 *            - Describes how an item is deleted. This attribute is
+	 *            required.
+	 * @param sendMeetingInvites
+	 *            - Describes whether a calendar item deletion is communicated
+	 *            to attendees. This attribute is required when calendar items
+	 *            are deleted. This attribute is optional if non-calendar items
+	 *            are deleted.
 	 * @param affectedTaskOccurrencesType
-	 * @return
+	 *            - Describes whether a task instance or a task master is
+	 *            deleted by a DeleteItem Operation. This attribute is required
+	 *            when tasks are deleted. This attribute is optional when
+	 *            non-task items are deleted.
+	 * @return {@link DeleteItem}
 	 */
 	private final  DeleteItem constructDeleteItemInternal(
 			NonEmptyArrayOfBaseItemIdsType arrayOfItemIds,
 			DisposalType disposalType,
-			CalendarItemCreateOrDeleteOperationType sendTo,
+			CalendarItemCreateOrDeleteOperationType sendMeetingInvites,
 			AffectedTaskOccurrencesType affectedTaskOccurrencesType) {
 		DeleteItem deleteItem = new DeleteItem();
 		deleteItem.setDeleteType(disposalType);
@@ -720,8 +773,8 @@ public abstract class BaseExchangeRequestFactory {
 		if (null != affectedTaskOccurrencesType) {
 			deleteItem.setAffectedTaskOccurrences(affectedTaskOccurrencesType);
 		}
-		if (null != sendTo) {
-			deleteItem.setSendMeetingCancellations(sendTo);
+		if (null != sendMeetingInvites) {
+			deleteItem.setSendMeetingCancellations(sendMeetingInvites);
 		}
 		return deleteItem;
 	}
@@ -730,14 +783,14 @@ public abstract class BaseExchangeRequestFactory {
 	 * Construct a {@link DeleteItem} request which will trigger the deletiion of the items specifiefied by {@code itemIds}
 	 * @param itemIds
 	 * @param disposalType
-	 * @param sendTo
+	 * @param sendMeetingInvites
 	 * @param affectedTaskOccurrencesType
 	 * @return
 	 */
 	protected DeleteItem constructDeleteItem(
 			Collection<? extends BaseItemIdType> itemIds,
 			DisposalType disposalType,
-			CalendarItemCreateOrDeleteOperationType sendTo,
+			CalendarItemCreateOrDeleteOperationType sendMeetingInvites,
 			AffectedTaskOccurrencesType affectedTaskOccurrencesType) {
 		Validate.notEmpty(itemIds, "must specify at least one itemId.");
 		Validate.notNull(disposalType, "disposalType cannot be null");
@@ -745,7 +798,7 @@ public abstract class BaseExchangeRequestFactory {
 		arrayOfItemIds
 				.getItemIdsAndOccurrenceItemIdsAndRecurringMasterItemIds()
 				.addAll(itemIds);
-		return constructDeleteItemInternal(arrayOfItemIds, disposalType, sendTo, affectedTaskOccurrencesType);
+		return constructDeleteItemInternal(arrayOfItemIds, disposalType, sendMeetingInvites, affectedTaskOccurrencesType);
 	}
 	
     //================================================================================
@@ -831,7 +884,7 @@ public abstract class BaseExchangeRequestFactory {
     // FindFolder
     //================================================================================	
 	/**
-	 * Construct a {@link FindFolder} request
+	 * Construct a {@link FindFolder} request using an {@link IndexedPageViewType}, which can be used for paging.
 	 * @param parent
 	 * @param folderShape
 	 * @param folderQueryTraversalType
@@ -850,7 +903,7 @@ public abstract class BaseExchangeRequestFactory {
 		responseShape.setBaseShape(folderShape);
 		findFolder.setFolderShape(responseShape);
 
-		IndexedPageViewType pageView = constructIndexedPageView(INIT_BASE_OFFSET, EWS_FIND_ITEM_MAX, false);
+		IndexedPageViewType pageView = constructIndexedPageView(INIT_BASE_OFFSET, getMaxFindItems(), false);
 		findFolder.setIndexedPageFolderView(pageView);
 
 		DistinguishedFolderIdType parentDistinguishedFolderId = getParentDistinguishedFolderId(parent);
@@ -868,10 +921,10 @@ public abstract class BaseExchangeRequestFactory {
     // UpdateFolder
     //================================================================================	
 	/**
-	 * 
-	 * @param folderId
-	 * @param exProp
-	 * @return
+	 * Construct an {@link UpdateFolder} request for deleting an extended property field.
+	 * @param folderId the {@link FolderIdType} to update.
+	 * @param exProp the {@link ExtendedPropertyType} to delete.
+	 * @return {@link UpdateFolder}
 	 */
 	protected UpdateFolder constructUpdateFolderDeleteExtendedProperty(
 			FolderIdType folderId, ExtendedPropertyType exProp) {
@@ -880,11 +933,11 @@ public abstract class BaseExchangeRequestFactory {
 	}
 
 	/**
-	 * 
-	 * @param folder
-	 * @param path
-	 * @param folderId
-	 * @return
+	 * Construct an {@link UpdateFolder} request for setting a property field.
+	 * @param folder the {@link FolderType} contains the changes.
+	 * @param path the {@link JAXBElement} idenifies the path to the property field that will be updated.
+	 * @param folderId the {@link FolderIdType} to update.
+	 * @return {@link UpdateFolder}
 	 */
 	protected UpdateFolder constructUpdateFolderSetField(FolderType folder,
 			JAXBElement<? extends BasePathToElementType> path,
@@ -894,12 +947,11 @@ public abstract class BaseExchangeRequestFactory {
 		changeDescription.setPath(path);
 		return constructUpdateFolderInternal(changeDescription, folderId);
 	}
-
 	/**
-	 * 
-	 * @param path
-	 * @param folderId
-	 * @return
+	 * Construct an {@link UpdateFolder} request for deleting a property field.
+	 * @param path the {@link JAXBElement} idenifies the path to the property field that will be deleted.
+	 * @param folderId the {@link FolderIdType} to update.
+	 * @return {@link UpdateFolder}
 	 */
 	protected UpdateFolder constructUpdateFolderDeleteField(
 			JAXBElement<? extends BasePathToElementType> path,
@@ -966,6 +1018,26 @@ public abstract class BaseExchangeRequestFactory {
 		folderIdArray.getFolderIdsAndDistinguishedFolderIds().addAll(folderIds);
 		return constructDeleteFolderInternal(folderIdArray, disposalType);
 	}
+	//================================================================================
+    // EmptyFolder
+    //================================================================================
+	/**
+	 * Construct an {@link EmptyFolder} request
+	 * Note this operation cannot be applied to CalendarFolders.
+	 * @param deleteSubFolders
+	 * @param disposalType
+	 * @param folderIds
+	 * @return {@link EmptyFolder}
+	 */
+	protected final EmptyFolder constructEmptyFolder(boolean deleteSubFolders, DisposalType disposalType, Collection<? extends BaseFolderIdType> folderIds){
+		EmptyFolder request = new EmptyFolder();
+		request.setDeleteSubFolders(deleteSubFolders);
+		request.setDeleteType(disposalType);
+		NonEmptyArrayOfBaseFolderIdsType nonEmptyArrayOfBaseFolderIds = new NonEmptyArrayOfBaseFolderIdsType();
+		nonEmptyArrayOfBaseFolderIds.getFolderIdsAndDistinguishedFolderIds().addAll(folderIds);
+		request.setFolderIds(nonEmptyArrayOfBaseFolderIds);
+		return request;
+	}
 	
 	//================================================================================
     // CalendarViewType
@@ -981,14 +1053,11 @@ public abstract class BaseExchangeRequestFactory {
 	 * @param endTime
 	 * @return {@link CalendarViewType}
 	 */
-	protected CalendarViewType constructCalendarView(Date startTime, Date endTime) {
+	private final CalendarViewType constructCalendarView(Date startTime, Date endTime) {
 		CalendarViewType calendarView = new CalendarViewType();
 		calendarView.setMaxEntriesReturned(getMaxFindItems());
-		calendarView.setStartDate(ExchangeDateUtils
-				.convertDateToXMLGregorianCalendar(startTime));
-		calendarView.setEndDate(ExchangeDateUtils
-				.convertDateToXMLGregorianCalendar(endTime));
-
+		calendarView.setStartDate(ExchangeDateUtils.convertDateToXMLGregorianCalendar(startTime));
+		calendarView.setEndDate(ExchangeDateUtils.convertDateToXMLGregorianCalendar(endTime));
 		return calendarView;
 	}
 	
@@ -1019,6 +1088,16 @@ public abstract class BaseExchangeRequestFactory {
     // Restrictions - methods to aid in constucting Search Restrictions
 	// (Typically used with Find<Item|Folder> operations)
     //================================================================================
+	private final RestrictionType constructAndRestriction(Collection<JAXBElement<? extends SearchExpressionType>> expressions){
+		AndType andType = new AndType();
+		andType.getSearchExpressions().addAll(expressions);
+		JAXBElement<AndType> andSearchExpression = getObjectFactory().createAnd(andType);
+		
+		// create restriction and set searchExpression
+		RestrictionType restrictionType = new RestrictionType();
+		restrictionType.setSearchExpression(andSearchExpression);
+		return restrictionType;
+	}
 	/**
 	 * Construct a {@link RestrictionType} object for use with a {@link FindItem} using a {@link IndexedPageViewType}.  
 	 * {@link RestrictionType} cannot be used with {@link CalendarViewType}.
@@ -1030,21 +1109,35 @@ public abstract class BaseExchangeRequestFactory {
 	 * @return a {@link RestrictionType} which targets {@link CalendarItemType} betweem {@code startTime} and {@code endTime}
 	 */
 	protected RestrictionType constructFindCalendarItemsByDateRangeRestriction(Date startTime, Date endTime) {
-		ObjectFactory of = getObjectFactory();
-		JAXBElement<IsGreaterThanOrEqualToType> startSearchExpression = getCalendarItemStartSearchExpression(startTime);
+		Collection<JAXBElement<? extends SearchExpressionType>> expressions = new HashSet<JAXBElement<? extends SearchExpressionType>>();
+		expressions.add(getCalendarItemStartSearchExpression(startTime));
+		expressions.add(getCalendarItemEndSearchExpression(endTime));
+		return constructAndRestriction(expressions);
+	}
+	
+	protected RestrictionType constructFindCancelledCalendarItemsByDateRangeRestriction(Date startTime, Date endTime){
+		Collection<JAXBElement<? extends SearchExpressionType>> expressions = new HashSet<JAXBElement<? extends SearchExpressionType>>();
+		expressions.add(getCalendarItemStartSearchExpression(startTime));
+		expressions.add(getCalendarItemEndSearchExpression(endTime));
+		expressions.add(getCalendarItemIsCancelledSearchExpression());
+		return constructAndRestriction(expressions);
+	}
+
+	protected JAXBElement<IsEqualToType> getCalendarItemIsCancelledSearchExpression(){
+		ConstantValueType isCancelledValue = new ConstantValueType();
+		isCancelledValue.setValue(BooleanUtils.toStringTrueFalse(true));
 		
-		JAXBElement<IsLessThanType> endSearchExpression = getCalendarItemEndSearchExpression( endTime);
+		FieldURIOrConstantType constant = new FieldURIOrConstantType();
+		constant.setConstant(isCancelledValue);
 		
-		//and them all together
-		AndType andType = new AndType();
-		andType.getSearchExpressions().add(startSearchExpression);
-		andType.getSearchExpressions().add(endSearchExpression);
-		JAXBElement<AndType> andSearchExpression = of.createAnd(andType);
+		PathToUnindexedFieldType path = new PathToUnindexedFieldType();
+		path.setFieldURI(UnindexedFieldURIType.CALENDAR_IS_CANCELLED);
 		
-		// create restriction and set searchExpression
-		RestrictionType restrictionType = new RestrictionType();
-		restrictionType.setSearchExpression(andSearchExpression);
-		return restrictionType;
+		IsEqualToType equalToType = new IsEqualToType();	
+		equalToType.setFieldURIOrConstant(constant);
+		equalToType.setPath(getObjectFactory().createFieldURI(path));
+		
+		return getObjectFactory().createIsEqualTo(equalToType);
 	}
 	
 	/**

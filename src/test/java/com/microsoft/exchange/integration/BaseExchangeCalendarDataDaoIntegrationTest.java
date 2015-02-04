@@ -23,17 +23,22 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import junit.framework.Assert;
+
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.time.DateUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.junit.Before;
@@ -48,14 +53,16 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import com.ibm.icu.util.TimeZone;
-import com.microsoft.exchange.exception.ExchangeCannotDeleteRuntimeException;
 import com.microsoft.exchange.exception.ExchangeRuntimeException;
 import com.microsoft.exchange.impl.BaseExchangeCalendarDataDao;
+import com.microsoft.exchange.messages.FindItem;
+import com.microsoft.exchange.messages.FindItemResponse;
 import com.microsoft.exchange.messages.GetServerTimeZones;
 import com.microsoft.exchange.types.BaseFolderType;
 import com.microsoft.exchange.types.BodyTypeType;
+import com.microsoft.exchange.types.CalendarFolderType;
 import com.microsoft.exchange.types.CalendarItemType;
-import com.microsoft.exchange.types.DisposalType;
+import com.microsoft.exchange.types.CalendarItemTypeType;
 import com.microsoft.exchange.types.FolderIdType;
 import com.microsoft.exchange.types.ItemIdType;
 import com.microsoft.exchange.types.TimeZoneDefinitionType;
@@ -76,7 +83,8 @@ public class BaseExchangeCalendarDataDaoIntegrationTest {
 	
 	@Before
 	public void setup(){
-		//upn = "jscholz@wisc.edu";
+		upn = "cclose@wisc.edu";
+				//"Test1-DoIT@aims.wisc.edu";
 	}
 
 	@Rule
@@ -150,6 +158,100 @@ public class BaseExchangeCalendarDataDaoIntegrationTest {
 	}
 	
 	@Test
+	public void getCalendarByDateRangeCalendarViewFindItem(){
+		Date startDate  = new Date();
+		Date endDate = DateUtils.addDays(startDate, 1);
+		
+		Set<ItemIdType> itemIds = exchangeCalendarDataDao.findCalendarItemIds(upn, startDate, endDate);
+		Collection<CalendarItemType> calendarItems = exchangeCalendarDataDao.getCalendarItems(upn, itemIds);
+		Assert.assertEquals(itemIds.size(), calendarItems.size());
+		log.info("Found "+calendarItems.size()+" calendarItems");
+		for(CalendarItemType c :  calendarItems){
+			log.info("subject: "+c.getSubject());
+			log.info("uid: "+c.getUID());
+			log.info("recurrenceId: "+c.getRecurrenceId().toString());
+			log.info("created: "+c.getDateTimeCreated().toString());
+			log.info("");
+		}
+	}
+	
+	@Test
+	public void getCancelledCalendarItemsByDateRangePageViewFindItem(){
+		Date now  = new Date();
+		Date startDate = DateUtils.addDays(now, -100);
+		Date endDate = DateUtils.addDays(now, 100);
+		BaseFolderType primaryCalendarFolder = exchangeCalendarDataDao.getPrimaryCalendarFolder(upn);
+		assertNotNull(primaryCalendarFolder);
+		Integer totalCount = primaryCalendarFolder.getTotalCount();
+		log.info("primaryCalendarFolder.totalCount="+totalCount);
+		FindItem request = exchangeCalendarDataDao.getRequestFactory().constructIndexedPageViewFindItemCancelledIdsByDateRange(startDate, endDate, Collections.singleton(primaryCalendarFolder.getFolderId()));
+		FindItemResponse response = exchangeCalendarDataDao.getWebServices().findItem(request);
+		Pair<Set<ItemIdType>, Integer> parsed = exchangeCalendarDataDao.getResponseUtils().parseFindItemIdResponse(response);
+		
+		boolean deleted = exchangeCalendarDataDao.deleteCalendarItems(upn, parsed.getLeft());
+		assertTrue(deleted);
+//		Collection<CalendarItemType> calendarItems = exchangeCalendarDataDao.getCalendarItems(upn, parsed.getLeft());
+//		log.info("Found "+calendarItems.size()+" calendarItems");
+//		for(CalendarItemType c :  calendarItems){
+//			assertTrue(c.isIsCancelled());
+//		}
+	}
+	
+	@Test
+	public void getCalendarByDateRangePageViewFindItem(){
+		//upn="tbrunner2@wisc.edu";
+		Date now  = new Date();
+		Date startDate = DateUtils.addDays(now, -100);
+		Date endDate = DateUtils.addDays(now, 100);
+		BaseFolderType primaryCalendarFolder = exchangeCalendarDataDao.getPrimaryCalendarFolder(upn);
+		assertNotNull(primaryCalendarFolder);
+		Integer totalCount = primaryCalendarFolder.getTotalCount();
+		log.info("primaryCalendarFolder.totalCount="+totalCount);
+		FindItem request = exchangeCalendarDataDao.getRequestFactory().constructIndexedPageViewFindItemIdsByDateRange(startDate, endDate, Collections.singleton(primaryCalendarFolder.getFolderId()));
+		FindItemResponse response = exchangeCalendarDataDao.getWebServices().findItem(request);
+		Pair<Set<ItemIdType>, Integer> parsed = exchangeCalendarDataDao.getResponseUtils().parseFindItemIdResponse(response);
+		Collection<CalendarItemType> calendarItems = exchangeCalendarDataDao.getCalendarItems(upn, parsed.getLeft());
+		log.info("Found "+calendarItems.size()+" calendarItems");
+		Collection<ItemIdType> cancelled = new HashSet<ItemIdType>();
+		for(CalendarItemType c :  calendarItems){
+			log.info(c.getSubject() +" - "+c.getCalendarItemType());
+			log.info("cancelled: "+c.isIsCancelled());
+			log.info("created:   "+c.getDateTimeCreated().toString());
+			log.info("start : "+ c.getStart().toString());
+			log.info("end	: "+ c.getEnd().toString());
+			if(c.getRecurrenceId() != null){
+				log.info(c.getRecurrence());
+			}
+			log.info(c.getUID());
+			log.info("");
+			if(c.isIsCancelled()){
+				cancelled.add(c.getItemId());
+			}
+		}
+		log.info("Found "+cancelled.size()+" cancelled calendarItems");
+		boolean deleted = exchangeCalendarDataDao.deleteCalendarItems(upn, cancelled);
+		assertTrue(deleted);
+		
+		
+	}
+	
+	@Test
+	public void getAllCalendarItems(){
+		BaseFolderType primaryCalendarFolder = exchangeCalendarDataDao.getPrimaryCalendarFolder(upn);
+		Set<FolderIdType> singleton = Collections.singleton(primaryCalendarFolder.getFolderId());
+		Set<ItemIdType> itemIds = exchangeCalendarDataDao.findAllItemIds(upn, singleton);
+		Collection<CalendarItemType> calendarItems = exchangeCalendarDataDao.getCalendarItems(upn, itemIds);
+		log.info("Found "+calendarItems.size()+" calendarItems");
+		for(CalendarItemType c :  calendarItems){
+			log.info("subject: "+c.getSubject());
+			log.info("uid: "+c.getUID());
+			log.info("recurrenceId: "+c.getRecurrenceId().toString());
+			log.info("created: "+c.getDateTimeCreated().toString());
+			log.info("");
+		}
+	}
+	
+	@Test
 	public void getTaskFolders(){
 		Map<String, String> folderMap = exchangeCalendarDataDao.getTaskFolderMap(upn);
 		for(String folderId: folderMap.keySet()){
@@ -168,7 +270,7 @@ public class BaseExchangeCalendarDataDaoIntegrationTest {
 			taskFolderId.setId(taskId);
 			
 			log.info("deleting taskFolder '"+taskFolderName+"' ");
-			boolean deleteTaskFolderSuccess = exchangeCalendarDataDao.deleteFolder(upn, DisposalType.SOFT_DELETE, taskFolderId);
+			boolean deleteTaskFolderSuccess = exchangeCalendarDataDao.deleteFolder(upn, taskFolderId);
 			assertTrue(deleteTaskFolderSuccess);
 		}
 	}
@@ -226,7 +328,7 @@ public class BaseExchangeCalendarDataDaoIntegrationTest {
 		FolderIdType calendarFolderId = exchangeCalendarDataDao.getCalendarFolderId(upn, "A2");
 		assertNotNull(calendarFolderId);
 		
-		boolean deleteFolderResult = exchangeCalendarDataDao.deleteFolder(upn,DisposalType.SOFT_DELETE,calendarFolderId);
+		boolean deleteFolderResult = exchangeCalendarDataDao.deleteFolder(upn, calendarFolderId);
 		assertTrue(deleteFolderResult);
 	}
 	
@@ -271,20 +373,21 @@ public class BaseExchangeCalendarDataDaoIntegrationTest {
 		
 		boolean deleteFolderSuccess = false;
 		
-		try{
-			deleteFolderSuccess =exchangeCalendarDataDao.deleteFolder(upn, DisposalType.MOVE_TO_DELETED_ITEMS, folderId);
-			fail("MOVE_TO_DELETED_ITEMS should have thrown an exception!");
-		}catch(ExchangeCannotDeleteRuntimeException e){	}
-		
+//		try{
+//			deleteFolderSuccess =exchangeCalendarDataDao.deleteFolder(upn, DisposalType.MOVE_TO_DELETED_ITEMS, folderId);
+//			fail("MOVE_TO_DELETED_ITEMS should have thrown an exception!");
+//		}catch(ExchangeCannotDeleteRuntimeException e){	}
+//		
 		assertFalse(deleteFolderSuccess);
 		log.info("deleteFolder via MOVE_TO_DELETED_ITEMS failed as expected, attempting SOFT_DELETE");
-		deleteFolderSuccess = exchangeCalendarDataDao.deleteFolder(upn, DisposalType.SOFT_DELETE, folderId);
+		deleteFolderSuccess = exchangeCalendarDataDao.deleteFolder(upn, folderId);
 		if(deleteFolderSuccess){
 			log.info("deleteFolder via SOFT_DELETE success!");
-		}else{
-			log.info("deleteFolder via SOFT_DELETE failure, attempting HARD_DELETE");
-			deleteFolderSuccess = exchangeCalendarDataDao.deleteFolder(upn, DisposalType.HARD_DELETE, folderId);
 		}
+//		else{
+//			log.info("deleteFolder via SOFT_DELETE failure, attempting HARD_DELETE");
+//			deleteFolderSuccess = exchangeCalendarDataDao.deleteFolder(upn, DisposalType.HARD_DELETE, folderId);
+//		}
 		assertTrue(deleteFolderSuccess);
 		exception.expect(ExchangeRuntimeException.class);
 		folderId = exchangeCalendarDataDao.getCalendarFolderId(upn, displayName);

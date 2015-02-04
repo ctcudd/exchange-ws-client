@@ -42,8 +42,6 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import com.microsoft.exchange.ExchangeDateUtils;
-import com.microsoft.exchange.ExchangeEventConverter;
-import com.microsoft.exchange.impl.ExchangeEventConverterImpl;
 import com.microsoft.exchange.impl.ThreadLocalImpersonationConnectingSIDSourceImpl;
 import com.microsoft.exchange.messages.ArrayOfResponseMessagesType;
 import com.microsoft.exchange.messages.FindFolder;

@@ -3,7 +3,9 @@
  */
 package com.microsoft.exchange.ical.model;
 
-import static junit.framework.Assert.*;
+import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.assertNotNull;
+import static junit.framework.Assert.assertNull;
 import net.fortuna.ical4j.model.parameter.XParameter;
 
 import org.junit.Test;

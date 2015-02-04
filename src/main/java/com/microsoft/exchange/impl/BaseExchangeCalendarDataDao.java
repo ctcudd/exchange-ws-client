@@ -51,7 +51,6 @@ import com.microsoft.exchange.ExchangeWebServices;
 import com.microsoft.exchange.exception.ExchangeExceededFindCountLimitRuntimeException;
 import com.microsoft.exchange.exception.ExchangeInvalidUPNRuntimeException;
 import com.microsoft.exchange.exception.ExchangeRuntimeException;
-import com.microsoft.exchange.exception.ExchangeWebServicesRuntimeException;
 import com.microsoft.exchange.messages.CreateFolder;
 import com.microsoft.exchange.messages.CreateFolderResponse;
 import com.microsoft.exchange.messages.CreateItem;
@@ -166,7 +165,7 @@ public class BaseExchangeCalendarDataDao {
 		return requestFactory;
 	}
 	/**
-	 * @param requestFactory the requestFactory to set
+	 * @param factory the requestFactory to set
 	 */
 	@Autowired(required=false)
 	public void setRequestFactory(ExchangeRequestFactory exchangeRequestFactory) {
@@ -179,6 +178,7 @@ public class BaseExchangeCalendarDataDao {
 	public ExchangeResponseUtils getResponseUtils() {
 		return responseUtils;
 	}
+	@Autowired(required=false)
 	public void setResponseUtils(ExchangeResponseUtils exchangeResponseUtils) {
 		this.responseUtils = exchangeResponseUtils;
 	}
@@ -341,7 +341,7 @@ public class BaseExchangeCalendarDataDao {
 	 */
 	private Set<BaseFolderType> getSecondaryFolders(String upn, DistinguishedFolderIdNameType parent) {
 		setContextCredentials(upn);
-		FindFolder findFolderRequest = getRequestFactory().constructFindFolder(parent, DefaultShapeNamesType.ALL_PROPERTIES, FolderQueryTraversalType.DEEP);
+		FindFolder findFolderRequest = getRequestFactory().constructFindFolder(parent, DefaultShapeNamesType.ALL_PROPERTIES, FolderQueryTraversalType.DEEP,null);
 		FindFolderResponse findFolderResponse = getWebServices().findFolder(findFolderRequest);
 		return getResponseUtils().parseFindFolderResponse(findFolderResponse);
 	}
@@ -501,7 +501,7 @@ public class BaseExchangeCalendarDataDao {
 					foundItems.addAll(findCalendarItemIdsInternal(upn,i.getStart().toDate(), i.getEnd().toDate(),calendarIds,newDepth));
 				}
 				return foundItems;
-			}catch(ExchangeWebServicesRuntimeException e2) {
+			}catch(ExchangeRuntimeException e2) {
 				long backoff = getWaitTimeExp(newDepth);
 				log.warn("findCalendarItemIdsInternal(upn="+upn+",startDate="+startDate+",+endDate="+endDate+",...) - failure #"+newDepth+". Sleeping for "+backoff+" before retry. " +e2.getMessage());
 				try {
@@ -541,6 +541,7 @@ public class BaseExchangeCalendarDataDao {
 		Pair<Set<ItemIdType>, Integer> pair = findItemIdsInternal(upn, request, 0);
 		Set<ItemIdType> itemIds = pair.getLeft();
 		Integer nextOffset = pair.getRight();
+		log.debug("found ");
 		while(nextOffset > 0){
 			request = getRequestFactory().constructFindNextItemIdSet(nextOffset, folderIds);
 			pair = findItemIdsInternal(upn, request, 0);
@@ -588,7 +589,7 @@ public class BaseExchangeCalendarDataDao {
 //					foundItems.addAll(findCalendarItemIdsInternal(upn,i.getStart().toDate(), i.getEnd().toDate(),calendarIds,newDepth));
 //				}
 //				return foundItems;
-			}catch(ExchangeWebServicesRuntimeException e2) {
+			}catch(ExchangeRuntimeException e2) {
 				long backoff = getWaitTimeExp(newDepth);
 				log.warn("findCalendarItemIdsInternal(upn="+upn+",request="+request+",...) - failure #"+newDepth+". Sleeping for "+backoff+" before retry. " +e2.getMessage());
 				try {
@@ -673,10 +674,10 @@ public class BaseExchangeCalendarDataDao {
 	
 	/**
 	 * 
-	 * @param upn
-	 * @param itemIds
-	 * @param depth
-	 * @return
+	 * @param upn the UserPrincipalName
+	 * @param itemIds the {@link ItemIdType}s
+	 * @param depth the number of recursive calls.
+	 * @return a never null but possbly empty {@link Set} of {@link ItemType}s
 	 */
 	private Set<ItemType> getItemsInternal(String upn, Collection<ItemIdType> itemIds, int depth){
 		Set<ItemType> results = new HashSet<ItemType>();
@@ -694,7 +695,7 @@ public class BaseExchangeCalendarDataDao {
 			try {
 				GetItemResponse response = getWebServices().getItem(request);
 				return getResponseUtils().parseGetItemResponse(response);
-			}catch(ExchangeWebServicesRuntimeException e) {
+			}catch(ExchangeRuntimeException e) {
 				long backoff = getWaitTimeExp(newDepth);
 				log.warn("getItemsInternal - failure #"+newDepth+". Sleeping for "+backoff+" before retry. " +e.getMessage());
 				try {
@@ -726,14 +727,12 @@ public class BaseExchangeCalendarDataDao {
 		}else {
 			setContextCredentials(upn);
 			Set<CalendarItemType> singleton = Collections.singleton(calendarItem);
-			CalendarItemCreateOrDeleteOperationType sendTo = CalendarItemCreateOrDeleteOperationType.SEND_TO_ALL_AND_SAVE_COPY;
-			CreateItem request = getRequestFactory().constructCreateCalendarItem(singleton, sendTo, null);
-			
+			CreateItem request = getRequestFactory().constructCreateCalendarItem(singleton);
 			try {
 				CreateItemResponse response = getWebServices().createItem(request);
 				Set<ItemIdType> createdCalendarItems = getResponseUtils().parseCreateItemResponse(response);
 				return DataAccessUtils.singleResult(createdCalendarItems);
-			}catch(ExchangeWebServicesRuntimeException e) {
+			}catch(ExchangeRuntimeException e) {
 				long backoff = getWaitTimeExp(newDepth);
 				log.warn("createCalendarItemInternal - failure #"+newDepth+". Sleeping for "+backoff+" before retry. " +e.getMessage());
 				try {
@@ -847,14 +846,13 @@ public class BaseExchangeCalendarDataDao {
 			throw new ExchangeRuntimeException("createCalendarItemInternal(upn="+upn+",...) failed "+getMaxRetries()+ " consecutive attempts.");
 		}else {
 			setContextCredentials(upn);
-			DeleteItem request = getRequestFactory().constructDeleteCalendarItems(itemIds, DisposalType.HARD_DELETE, CalendarItemCreateOrDeleteOperationType.SEND_TO_ALL_AND_SAVE_COPY);
-
+			DeleteItem request = getRequestFactory().constructDeleteCalendarItems(itemIds);
 			try {
 				DeleteItemResponse response = getWebServices().deleteItem(request);
 				boolean success = getResponseUtils().confirmSuccess(response);
 				return success;
 			
-			}catch(ExchangeWebServicesRuntimeException e) {
+			}catch(ExchangeRuntimeException e) {
 				long backoff = getWaitTimeExp(newDepth);
 				log.warn("deleteCalendarItemsInternal - failure #"+newDepth+". Sleeping for "+backoff+" before retry. " +e.getMessage());
 				try {
@@ -867,12 +865,18 @@ public class BaseExchangeCalendarDataDao {
 		}
 	}
 	
+	/**
+	 * Delete {@link CalendarItemType}s for the user.
+	 * @param upn - the userPrincipalName identifies the user to delete {@link CalendarItemType}s for.
+	 * @param itemIds - the {@link ItemIdType}s for the {@link CalendarItemType}s to delete.
+	 * 
+	 * @see ExchangeRequestFactory#constructDeleteCalendarItems(Collection, DisposalType, CalendarItemCreateOrDeleteOperationType)
+	 * @return
+	 */
 	public boolean deleteCalendarItems(String upn, Collection<ItemIdType> itemIds) {
 		return deleteCalendarItemsInternal(upn, itemIds,0);
 	}
-	
 
-	
 	//================================================================================
     // ResolveNames
     //================================================================================	
@@ -991,8 +995,8 @@ public class BaseExchangeCalendarDataDao {
 	 * @param folderId
 	 * @return
 	 */
-	public boolean emptyFolder(String upn, boolean deleteSubFolders, DisposalType disposalType, BaseFolderIdType folderId){
-		EmptyFolder request = getRequestFactory().constructEmptyFolder(deleteSubFolders, disposalType, Collections.singleton(folderId));
+	public boolean emptyFolder(String upn, boolean deleteSubFolders,  BaseFolderIdType folderId){
+		EmptyFolder request = getRequestFactory().constructEmptyFolder(deleteSubFolders,  Collections.singleton(folderId));
 		setContextCredentials(upn);
 		EmptyFolderResponse response = getWebServices().emptyFolder(request);
 		return getResponseUtils().parseEmptyFolderResponse(response);
@@ -1040,7 +1044,7 @@ public class BaseExchangeCalendarDataDao {
 	public boolean deleteCalendarFolder(String upn, FolderIdType folderId){
 		boolean empty = emptyCalendarFolder(upn, folderId);
 		if(empty){
-			return deleteFolder(upn, DisposalType.SOFT_DELETE, folderId);					
+			return deleteFolder(upn, folderId);					
 		}
 		return false;
 	}
@@ -1052,7 +1056,7 @@ public class BaseExchangeCalendarDataDao {
 	 * @return - True if the calender folder was deleted, false otherwise
 	 */
 	public boolean deleteEmptyCalendarFolder(String upn, FolderIdType folderId){
-		return isEmpty(upn, folderId) ? deleteFolder(upn, DisposalType.SOFT_DELETE, folderId) : false;
+		return isEmpty(upn, folderId) ? deleteFolder(upn, folderId) : false;
 	}
 	
 	/**
@@ -1062,12 +1066,11 @@ public class BaseExchangeCalendarDataDao {
 	 * @param folderId - the folder to delete
 	 * @return
 	 */
-	public boolean deleteFolder(String upn, DisposalType disposalType, BaseFolderIdType folderId){
-		DeleteFolder request = getRequestFactory().constructDeleteFolder(folderId, disposalType);
+	public boolean deleteFolder(String upn, BaseFolderIdType folderId){
+		DeleteFolder request = getRequestFactory().constructDeleteFolder(folderId);
 		setContextCredentials(upn);
 		DeleteFolderResponse response = getWebServices().deleteFolder(request);
 		return getResponseUtils().parseDeleteFolderResponse(response);
-				
 	}
 	
 	/**

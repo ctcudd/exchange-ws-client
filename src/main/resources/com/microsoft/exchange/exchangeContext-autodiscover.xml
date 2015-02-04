@@ -6,6 +6,20 @@
 	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
 						http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.0.xsd">
 	
+	
+	<bean id="messageSender"
+		class="com.microsoft.exchange.impl.http.CustomHttpComponentsMessageSender" p:httpClient-ref="ewsHttpClient" >
+		<property name="maxTotalConnections" value="${http.maxTotalConnections:10}" />
+		<property name="defaultMaxPerRouteOverride" value="${http.maxConnectionsPerRoute:10}" />
+		<property name="connectionTimeout" value="${http.connectionTimeout:1200000}" />
+		<property name="readTimeout" value="${http.readTimeout:1200000}" />
+		<property name="preemptiveAuthEnabled" value="${http.preemptiveAuthEnabled:false}" />
+		<property name="ntlmAuthEnabled" value="${http.ntlmAuthEnabled:false}" />
+		<property name="credentials">
+			<ref bean="credential" />
+		</property>
+	</bean>
+	
 	<bean id="ewsDestinationProvider" class="com.microsoft.exchange.autodiscover.AutodiscoverDestinationProvider" >
        	<property name="connectingSIDSource">
 			<bean class="com.microsoft.exchange.impl.ThreadLocalImpersonationConnectingSIDSourceImpl"/>
@@ -36,26 +50,12 @@
 		</property>
 	</bean>
 	
-		
-	<bean id="messageSender"
-		class="com.microsoft.exchange.impl.http.CustomHttpComponentsMessageSender" p:httpClient-ref="ewsHttpClient" >
-		<property name="maxTotalConnections" value="${http.maxTotalConnections:10}" />
-		<property name="defaultMaxPerRouteOverride" value="${http.maxConnectionsPerRoute:10}" />
-		<property name="connectionTimeout" value="${http.connectionTimeout:1200000}" />
-		<property name="readTimeout" value="${http.readTimeout:1200000}" />
-		<property name="preemptiveAuthEnabled" value="${http.preemptiveAuthEnabled:false}" />
-		<property name="ntlmAuthEnabled" value="${http.ntlmAuthEnabled:false}" />
-		<property name="credentials">
-			<ref bean="credential" />
-		</property>
-	</bean>
-	
 	<bean id="credential" class="org.apache.http.auth.UsernamePasswordCredentials">
 		<constructor-arg index="0" value="${username}" />
 		<constructor-arg index="1" value="${password}" />
 	</bean>
 	
-	 <bean id="ewsHttpClientConnectionManager" class="org.apache.http.impl.conn.PoolingClientConnectionManager" p:maxTotal="200"/>
+	<bean id="ewsHttpClientConnectionManager" class="org.apache.http.impl.conn.PoolingClientConnectionManager" p:maxTotal="200"/>
 	 
     <bean id="ewsHttpClient" class="org.apache.http.impl.client.DefaultHttpClient"
           c:conman-ref="ewsHttpClientConnectionManager"
