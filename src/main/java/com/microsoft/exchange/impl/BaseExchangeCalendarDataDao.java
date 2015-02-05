@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.inject.Inject;
 import javax.xml.bind.JAXBContext;
 
 import org.apache.commons.lang.StringUtils;
@@ -115,8 +116,8 @@ import com.microsoft.exchange.types.TimeZoneDefinitionType;
  * 
  * @author Collin Cudd
  */
-@Service
-public class BaseExchangeCalendarDataDao {
+
+public class BaseExchangeCalendarDataDao implements ExchangeCalendarDataDao {
 
     //================================================================================
     // Properties 
@@ -158,7 +159,7 @@ public class BaseExchangeCalendarDataDao {
 	/**
 	 * @param exchangeWebServices the exchangeWebServices to set
 	 */
-	@Autowired @Qualifier("ewsClient")
+	@Inject
 	public void setWebServices(ExchangeWebServices exchangeWebServices) {
 		this.webServices = exchangeWebServices;
 	}
@@ -197,7 +198,7 @@ public class BaseExchangeCalendarDataDao {
 	/**
 	 * @param jaxbContext the jaxbContext to set
 	 */
-	@Autowired
+	@Inject
 	public void setJaxbContext(JAXBContext jaxbContext) {
 		this.jaxbContext = jaxbContext;
 	}
@@ -437,24 +438,18 @@ public class BaseExchangeCalendarDataDao {
     // FindItem
     //================================================================================	
 	
-	/**
-	 * Find all {@link ItemIdType} within the primary {@link CalendarFolderType} between {@code startDate} and {@code endDate}
-	 * @param upn
-	 * @param startDate
-	 * @param endDate
-	 * @return a never null but possibly empty {@link Set} of {@link ItemIdType}
+	/* (non-Javadoc)
+	 * @see com.microsoft.exchange.impl.ExchangeCalendarDataDao#findCalendarItemIds(java.lang.String, java.util.Date, java.util.Date)
 	 */
+	@Override
 	public Set<ItemIdType> findCalendarItemIds(String upn, Date startDate, Date endDate){
 		return findCalendarItemIdsInternal(upn, startDate, endDate, null, 0);
 	}
 	
-	/**
-	 * Find all {@link ItemIdType} within the specified {@link FolderIdType}s between {@code startDate} and {@code endDate}
-	 * @param upn
-	 * @param startDate
-	 * @param endDate
-	 * @return a never null but possibly empty {@link Set} of {@link ItemIdType}
+	/* (non-Javadoc)
+	 * @see com.microsoft.exchange.impl.ExchangeCalendarDataDao#findCalendarItemIds(java.lang.String, java.util.Date, java.util.Date, java.util.Collection)
 	 */
+	@Override
 	public Set<ItemIdType> findCalendarItemIds(String upn, Date startDate, Date endDate, Collection<FolderIdType> calendarIds) {
 		return findCalendarItemIdsInternal(upn, startDate, endDate, calendarIds, 0);
 	}
@@ -533,14 +528,10 @@ public class BaseExchangeCalendarDataDao {
 		return pair.getLeft();
 	}
 	
-	/**
-	 * Obtain all {@link ItemIdType}s within a specified {@link FolderIdType} by
-	 * repeatedly callling {@link FindItem} and paging the results
-	 * 
-	 * @param upn
-	 * @param folderIds
-	 * @return a never null but possibly empty {@link Set} of {@link ItemIdType}
+	/* (non-Javadoc)
+	 * @see com.microsoft.exchange.impl.ExchangeCalendarDataDao#findAllItemIds(java.lang.String, java.util.Collection)
 	 */
+	@Override
 	public Set<ItemIdType> findAllItemIds(String upn, Collection<FolderIdType> folderIds){
 		FindItem request = getRequestFactory().constructFindFirstItemIdSet(folderIds);
 		Pair<Set<ItemIdType>, Integer> pair = findItemIdsInternal(upn, request, 0);
@@ -750,22 +741,18 @@ public class BaseExchangeCalendarDataDao {
 		
 	}
 
-	/**
-	 * Create the {@link CalendarItemType} on the exchange server
-	 * @param upn
-	 * @param calendarItem
-	 * @return {@link ItemIdType}
+	/* (non-Javadoc)
+	 * @see com.microsoft.exchange.impl.ExchangeCalendarDataDao#createCalendarItem(java.lang.String, com.microsoft.exchange.types.CalendarItemType)
 	 */
+	@Override
 	public ItemIdType createCalendarItem(String upn, CalendarItemType calendarItem){
 		return createCalendarItemInternal(upn, calendarItem, 0);
 	}
 	
-	/**
-	 * Create a {@link CalendarFolderType} with the specified {@code displayName}
-	 * @param upn
-	 * @param displayName
-	 * @return {@link FolderIdType}
+	/* (non-Javadoc)
+	 * @see com.microsoft.exchange.impl.ExchangeCalendarDataDao#createCalendarFolder(java.lang.String, java.lang.String)
 	 */
+	@Override
 	public FolderIdType createCalendarFolder(String upn, String displayName) {
 		setContextCredentials(upn);
 		log.debug("createCalendarFolder upn="+upn+", displayName="+displayName);
@@ -868,15 +855,10 @@ public class BaseExchangeCalendarDataDao {
 			}
 		}
 	}
-	/**
-	 * Delete {@link CalendarItemType}s for the user.
-	 * @param upn - the userPrincipalName identifies the user to delete {@link CalendarItemType}s for.
-	 * @param itemIds - the {@link ItemIdType}s for the {@link CalendarItemType}s to delete.
-	 * 
-	 * @see ExchangeRequestFactory#constructDeleteCalendarItems(Collection, DisposalType, CalendarItemCreateOrDeleteOperationType)
-	 * @return
+	/* (non-Javadoc)
+	 * @see com.microsoft.exchange.impl.ExchangeCalendarDataDao#deleteCalendarItemsWithRetry(java.lang.String, java.util.Collection)
 	 */
-	@Retryable(maxAttempts=10, include=ExchangeWebServicesRuntimeException.class, backoff=@Backoff(delay=100, multiplier=2, random=true))
+	@Override
 	public boolean deleteCalendarItemsWithRetry(String upn, Collection<ItemIdType> itemIds){
 		setContextCredentials(upn);
 		DeleteItem request = getRequestFactory().constructDeleteCalendarItems(itemIds);
@@ -885,6 +867,10 @@ public class BaseExchangeCalendarDataDao {
 		return success;
 	}
 	
+	/* (non-Javadoc)
+	 * @see com.microsoft.exchange.impl.ExchangeCalendarDataDao#deleteCalendarItems(java.lang.String, java.util.Collection)
+	 */
+	@Override
 	public boolean deleteCalendarItems(String upn, Collection<ItemIdType> itemIds) {
 		return deleteCalendarItemsInternal(upn, itemIds,0);
 	}
@@ -1070,13 +1056,10 @@ public class BaseExchangeCalendarDataDao {
 	//================================================================================
     // DeleteFolder
     //================================================================================	
-	/**
-	 * Delete the specified {@code folderId} and all items contained wihtin it.
-	 * 
-	 * @param upn
-	 * @param folderId
-	 * @return
+	/* (non-Javadoc)
+	 * @see com.microsoft.exchange.impl.ExchangeCalendarDataDao#deleteCalendarFolder(java.lang.String, com.microsoft.exchange.types.FolderIdType)
 	 */
+	@Override
 	public boolean deleteCalendarFolder(String upn, FolderIdType folderId){
 		boolean empty = emptyCalendarFolder(upn, folderId);
 		if(empty){
@@ -1095,13 +1078,10 @@ public class BaseExchangeCalendarDataDao {
 		return isEmpty(upn, folderId) ? deleteFolder(upn, folderId) : false;
 	}
 	
-	/**
-	 * Delete a calendar folder
-	 * @param upn - the user 
-	 * @param disposalType - how the deletion is performed
-	 * @param folderId - the folder to delete
-	 * @return
+	/* (non-Javadoc)
+	 * @see com.microsoft.exchange.impl.ExchangeCalendarDataDao#deleteFolder(java.lang.String, com.microsoft.exchange.types.BaseFolderIdType)
 	 */
+	@Override
 	public boolean deleteFolder(String upn, BaseFolderIdType folderId){
 		DeleteFolder request = getRequestFactory().constructDeleteFolder(folderId);
 		setContextCredentials(upn);

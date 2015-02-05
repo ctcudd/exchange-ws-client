@@ -43,7 +43,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import com.microsoft.exchange.ExchangeDateUtils;
 import com.microsoft.exchange.config.ImpersonationConfig;
 import com.microsoft.exchange.exception.ExchangeRuntimeException;
-import com.microsoft.exchange.impl.BaseExchangeCalendarDataDao;
+import com.microsoft.exchange.impl.ExchangeCalendarDataDao;
 import com.microsoft.exchange.impl.ThreadLocalImpersonationConnectingSIDSourceImpl;
 import com.microsoft.exchange.messages.CreateItem;
 import com.microsoft.exchange.messages.CreateItemResponse;
@@ -65,7 +65,7 @@ import com.microsoft.exchange.types.ItemIdType;
 public class ImpersonationClientConcurrencyTest extends AbstractIntegrationTest {
 
 	@Autowired
-	protected BaseExchangeCalendarDataDao exchangeCalendarDataDao;
+	protected ExchangeCalendarDataDao exchangeCalendarDataDao;
 	
 	private int targetConcurrency;
 	/**

@@ -19,7 +19,7 @@ public class JaxbConfig {
 
 	@Bean
 	public JAXBContext jaxbContext(){
-		JAXBContext context = JAXBContext.
+		return null;
 	}
 	
 	@Bean
