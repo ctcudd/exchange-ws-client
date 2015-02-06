@@ -5,3 +5,5 @@ bootstrap
 exchange*.properties
 target
 
+/target/
+/target/

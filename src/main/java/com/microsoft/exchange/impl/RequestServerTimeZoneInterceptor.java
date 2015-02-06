@@ -36,7 +36,7 @@ import org.springframework.ws.soap.SoapHeader;
 import org.springframework.ws.soap.SoapMessage;
 
 import com.ibm.icu.util.TimeZone;
-import com.microsoft.exchange.exception.ExchangeWebServicesRuntimeException;
+import com.microsoft.exchange.ExchangeWebServicesRuntimeException;
 import com.microsoft.exchange.types.TimeZoneContext;
 import com.microsoft.exchange.types.TimeZoneDefinitionType;
 

@@ -43,9 +43,9 @@ import org.springframework.ws.soap.client.core.SoapActionCallback;
 import org.springframework.ws.transport.WebServiceMessageSender;
 import org.springframework.ws.transport.http.HttpComponentsMessageSender;
 
+import com.microsoft.exchange.ExchangeInvalidUPNRuntimeException;
 import com.microsoft.exchange.ExchangeWebServices;
-import com.microsoft.exchange.exception.ExchangeInvalidUPNRuntimeException;
-import com.microsoft.exchange.exception.ExchangeWebServicesRuntimeException;
+import com.microsoft.exchange.ExchangeWebServicesRuntimeException;
 import com.microsoft.exchange.messages.AddDelegate;
 import com.microsoft.exchange.messages.AddDelegateResponse;
 import com.microsoft.exchange.messages.ConvertId;

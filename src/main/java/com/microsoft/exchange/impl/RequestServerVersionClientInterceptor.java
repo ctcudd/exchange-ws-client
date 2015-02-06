@@ -37,7 +37,7 @@ import org.springframework.ws.soap.SoapEnvelope;
 import org.springframework.ws.soap.SoapHeader;
 import org.springframework.ws.soap.SoapMessage;
 
-import com.microsoft.exchange.exception.ExchangeWebServicesRuntimeException;
+import com.microsoft.exchange.ExchangeWebServicesRuntimeException;
 import com.microsoft.exchange.impl.http.CredentialsProviderFactory;
 import com.microsoft.exchange.types.ExchangeVersionType;
 import com.microsoft.exchange.types.RequestServerVersion;
