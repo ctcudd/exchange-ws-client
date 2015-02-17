@@ -23,6 +23,7 @@
 package com.microsoft.exchange.impl.http;
 
 import java.net.URI;
+import java.util.Collections;
 
 import org.apache.http.auth.AuthScheme;
 import org.apache.http.auth.AuthScope;
@@ -47,6 +48,7 @@ import com.microsoft.exchange.impl.ExchangeOnlineThrottlingPolicy;
 public class CustomHttpComponentsMessageSender extends
 		HttpComponentsMessageSender {
 
+	private static final String HTTP_AUTH_TARGET_SCHEME_PREF = "http.auth.target-scheme-pref";
 	private NTLMSchemeFactory ntlmSchemeFactory = new  NTLMSchemeFactory();
 	private boolean preemptiveAuthEnabled = false;
 	private boolean ntlmAuthEnabled = false;
@@ -110,15 +112,20 @@ public class CustomHttpComponentsMessageSender extends
 	@Override
 	public void afterPropertiesSet() throws Exception {
 		super.afterPropertiesSet();
+		DefaultHttpClient httpClient = (DefaultHttpClient) getHttpClient();
 		if(isPreemptiveAuthEnabled()) {
 			if(isNtlmAuthEnabled()){
-				this.preemptiveAuthScheme = ntlmSchemeFactory.newInstance(getHttpClient().getParams());
+				this.preemptiveAuthScheme = ntlmSchemeFactory.newInstance(httpClient.getParams());
 			}else{
 				this.preemptiveAuthScheme = identifyScheme(getPreemptiveAuthScope().getScheme());
 			}
-			DefaultHttpClient httpClient = (DefaultHttpClient) getHttpClient();
 			httpClient.addRequestInterceptor(new PreemptiveAuthInterceptor());
 		}
+		if(isNtlmAuthEnabled()){
+			//avoids: "WARN [main] org.apache.http.client.protocol.RequestTargetAuthentication - NEGOTIATE authentication error: Invalid name provided (Mechanism level: Cannot locate default realm)"
+			httpClient.getParams().setParameter(HTTP_AUTH_TARGET_SCHEME_PREF, Collections.singletonList("NTLM"));
+		}
+		
 		boolean overrideSuccess = false;
 		if(defaultMaxPerRouteOverride != null) {
 			overrideSuccess = this.overrideDefaultMaxPerRoute(defaultMaxPerRouteOverride);
