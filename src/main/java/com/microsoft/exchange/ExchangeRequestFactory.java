@@ -204,6 +204,14 @@ public class ExchangeRequestFactory extends BaseExchangeRequestFactory{
 	public void setFolderExtendedPropertyPaths(Collection<PathToExtendedFieldType> folderPaths) {
 		this.folderExtendedPropertyPaths = folderPaths;
 	}
+	
+	public void setSendMeetingInvitations(CalendarItemCreateOrDeleteOperationType sendMeetingInvitations){
+		this.sendMeetingInvitations=sendMeetingInvitations;
+	}
+	
+	public void setSendMeetingUpdates(CalendarItemUpdateOperationType sendMeetingUpdates ){
+		this.sendMeetingUpdates = sendMeetingUpdates;
+	}
     //================================================================================
     // MEAT
     //================================================================================	

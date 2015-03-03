@@ -558,10 +558,14 @@ public class ExchangeRequestFactoryTest extends ExchangeRequestFactoryUtils{
 		assertNotNull(request.getItemShape());
 		assertEquals(DefaultShapeNamesType.ID_ONLY, request.getItemShape().getBaseShape());
 		
-		//no search restrictions we are getting all limited only by maxFind
+		//no search restrictions we are getting all items, limited only by maxFind
 		assertNull(request.getRestriction());
 		
 		assertNotNull(request.getTraversal());
+		
+		//sort orders can be problematic so we avoid them here.
+		assertNull(request.getSortOrder());
+		
 		//we are only looking for items in the folderIds provided (dont search recursively)
 		assertEquals(ItemQueryTraversalType.SHALLOW, request.getTraversal());
 	}

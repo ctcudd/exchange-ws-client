@@ -698,8 +698,12 @@ public abstract class BaseExchangeRequestFactory {
 		
 		ItemResponseShapeType responseShape = constructTextualItemResponseShapeInternal(baseShape);
 		
+		
+		List<FieldOrderType> sortOrderList = null;
 		FieldOrderType sortOrder = constructSortOrder();
-		List<FieldOrderType> sortOrderList = Collections.singletonList(sortOrder);
+		if(sortOrder != null ){
+			sortOrderList = Collections.singletonList(sortOrder);
+		}
 		//FindItem findItem = constructIndexedPageViewFindItem(view, responseShape, ItemQueryTraversalType.ASSOCIATED, restriction, sortOrderList, folderIds);
 		
 		FindItem findItem = constructIndexedPageViewFindItem(view, responseShape, traversalType, restriction, sortOrderList, folderIds);
@@ -1260,18 +1264,21 @@ public abstract class BaseExchangeRequestFactory {
 	/**
 	 * Constructs a {@link FieldOrderType} which will sort items by id ascending.
 	 * 
+	 * Warning!  applying a sortOrder to a FindItem operation can have inconsistent results (errorInternalServerError when targetting aims, NO_ERROR when targeting O365....)
+	 * 
 	 * @return
 	 */
 	protected FieldOrderType constructSortOrder() {
-		ObjectFactory of = getObjectFactory();
-		//set sort order (earliest items first)
-		FieldOrderType sortOrder = new FieldOrderType();
-		sortOrder.setOrder(SortDirectionType.ASCENDING);
-		PathToUnindexedFieldType path = new PathToUnindexedFieldType();
-		path.setFieldURI(UnindexedFieldURIType.ITEM_ITEM_ID);
-		//path.setFieldURI(UnindexedFieldURIType.CALENDAR_START);
-		JAXBElement<PathToUnindexedFieldType> sortPath = of.createFieldURI(path);
-		sortOrder.setPath(sortPath);
-		return sortOrder;
+		return null;
+//		ObjectFactory of = getObjectFactory();
+//		//set sort order (earliest items first)
+//		FieldOrderType sortOrder = new FieldOrderType();
+//		sortOrder.setOrder(SortDirectionType.ASCENDING);
+//		PathToUnindexedFieldType path = new PathToUnindexedFieldType();
+//		path.setFieldURI(UnindexedFieldURIType.ITEM_ITEM_ID);
+//		//path.setFieldURI(UnindexedFieldURIType.CALENDAR_START);
+//		JAXBElement<PathToUnindexedFieldType> sortPath = of.createFieldURI(path);
+//		sortOrder.setPath(sortPath);
+//		return sortOrder;
 	}
 }
