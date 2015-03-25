@@ -223,11 +223,26 @@ public class ExchangeRequestFactory extends BaseExchangeRequestFactory{
 	 * method uses {@link DefaultShapeNamesType#ALL_PROPERTIES} to return all
 	 * properties for the contact matching the alias
 	 * 
-	 * @param alias
-	 * @return {@link ResolveNames}
+	 * @see #constructResolveNames(String, boolean, boolean, ResolveNamesSearchScopeType, DefaultShapeNamesType)
+	 * @see #constructResolveNamesWithDistinguishedFolderId(String)
+	 * 
+	 * @param alias - the email address to search for
+	 * @return a {@link ResolveNames} request object.
 	 */
 	public ResolveNames constructResolveNames(String alias) {
-		return constructResolveNames(alias, true, getResolveNamesSearchScope(), DefaultShapeNamesType.ALL_PROPERTIES);
+		return constructResolveNames(alias, false, true, getResolveNamesSearchScope(), DefaultShapeNamesType.ALL_PROPERTIES);
+	}
+	
+	/**
+	 * Unlike {@link #constructResolveNames(String)}, this method will the set the parentFolderIds property of the resulting {@link ResolveNames} object.
+	 * @see #constructResolveNames(String)
+	 * @see #constructResolveNames(String, boolean, boolean, ResolveNamesSearchScopeType, DefaultShapeNamesType)
+	 * 
+	 * @param alias - the email address to search for
+	 * @return a {@link ResolveNames} request object.
+	 */
+	public ResolveNames constructResolveNamesWithDistinguishedFolderId(String alias){
+		return constructResolveNames(alias, true, true, getResolveNamesSearchScope(), DefaultShapeNamesType.ALL_PROPERTIES);
 	}
 	
 	/**

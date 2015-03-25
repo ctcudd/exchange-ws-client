@@ -12,7 +12,6 @@ import java.util.List;
 import javax.xml.bind.JAXBElement;
 import javax.xml.datatype.XMLGregorianCalendar;
 
-import org.apache.commons.lang.BooleanUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.Validate;
 import org.apache.commons.logging.Log;
@@ -51,6 +50,7 @@ import com.microsoft.exchange.types.DeleteFolderFieldType;
 import com.microsoft.exchange.types.DisposalType;
 import com.microsoft.exchange.types.DistinguishedFolderIdNameType;
 import com.microsoft.exchange.types.DistinguishedFolderIdType;
+import com.microsoft.exchange.types.EmailAddressType;
 import com.microsoft.exchange.types.ExtendedPropertyType;
 import com.microsoft.exchange.types.FieldOrderType;
 import com.microsoft.exchange.types.FieldURIOrConstantType;
@@ -62,7 +62,6 @@ import com.microsoft.exchange.types.FolderResponseShapeType;
 import com.microsoft.exchange.types.FolderType;
 import com.microsoft.exchange.types.IndexBasePointType;
 import com.microsoft.exchange.types.IndexedPageViewType;
-import com.microsoft.exchange.types.IsEqualToType;
 import com.microsoft.exchange.types.IsGreaterThanOrEqualToType;
 import com.microsoft.exchange.types.IsLessThanType;
 import com.microsoft.exchange.types.ItemChangeType;
@@ -90,7 +89,6 @@ import com.microsoft.exchange.types.RestrictionType;
 import com.microsoft.exchange.types.SearchExpressionType;
 import com.microsoft.exchange.types.SetFolderFieldType;
 import com.microsoft.exchange.types.SetItemFieldType;
-import com.microsoft.exchange.types.SortDirectionType;
 import com.microsoft.exchange.types.TargetFolderIdType;
 import com.microsoft.exchange.types.TaskType;
 import com.microsoft.exchange.types.UnindexedFieldURIType;
@@ -106,6 +104,7 @@ public abstract class BaseExchangeRequestFactory {
     //================================================================================
 	protected static final int FIND_ITEM_MAX 	= 1000;
 	protected static final int INIT_BASE_OFFSET = 0;
+	public static final String SMTP = "smtp:";
 	
     //================================================================================
     // Properties
@@ -335,7 +334,7 @@ public abstract class BaseExchangeRequestFactory {
 	 * @param contactDataShape
 	 * @return {@link ResolveNames} request
 	 */
-	protected final ResolveNames constructResolveNames(String alias, boolean returnFullContactData, ResolveNamesSearchScopeType searchScope, DefaultShapeNamesType contactDataShape) {
+	private final ResolveNames constructResolveNames(String alias, boolean returnFullContactData, ResolveNamesSearchScopeType searchScope, DefaultShapeNamesType contactDataShape) {
 		ResolveNames resolveNames = new ResolveNames();
 		resolveNames.setContactDataShape(contactDataShape);
 		resolveNames.setReturnFullContactData(returnFullContactData);
@@ -344,6 +343,39 @@ public abstract class BaseExchangeRequestFactory {
 		return resolveNames;
 	}
 	
+	/**
+	 * When using impersonation, your admin account should have a mailbox, if it doesn't you may run into an error like the following:
+	 * ERROR_MISSING_EMAIL_ADDRESS - "When making a request as an account that does not have a mailbox, you must specify the mailbox primary SMTP address for any distinguished folder Ids.".
+	 * 
+	 * Unlike {@link #constructResolveNames(String, boolean, ResolveNamesSearchScopeType, DefaultShapeNamesType)}, this method will the set the parentFolderIds property of the resulting {@link ResolveNames} object
+	 * 
+	 * @param alias
+	 * @param setDistinqishedFolderId
+	 * @param returnFullContactData
+	 * @param searchScope
+	 * @param contactDataShape
+	 * @return
+	 */
+	protected ResolveNames constructResolveNames(String alias, boolean setDistinqishedFolderId, boolean returnFullContactData, ResolveNamesSearchScopeType searchScope, DefaultShapeNamesType contactDataShape) {
+		String emailAddress = alias;
+		if(alias.startsWith(SMTP)){
+			emailAddress = alias.substring(SMTP.length());
+		}else{
+			alias = SMTP + alias;
+		}
+		ResolveNames request = constructResolveNames(alias, returnFullContactData, searchScope, contactDataShape);
+		if(setDistinqishedFolderId){
+			NonEmptyArrayOfBaseFolderIdsType baseFolderIds = new NonEmptyArrayOfBaseFolderIdsType();
+			DistinguishedFolderIdType baseFolderId = new DistinguishedFolderIdType();
+			baseFolderId.setId(DistinguishedFolderIdNameType.CONTACTS);
+			EmailAddressType mailbox = new EmailAddressType();
+			mailbox.setEmailAddress(emailAddress);
+			baseFolderId.setMailbox(mailbox);
+			baseFolderIds.getFolderIdsAndDistinguishedFolderIds().add(baseFolderId);
+			request.setParentFolderIds(baseFolderIds);
+		}
+		return request;
+	}
     //================================================================================
     // CreateItem
     //================================================================================
