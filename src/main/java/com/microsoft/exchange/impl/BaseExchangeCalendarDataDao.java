@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 
 import javax.xml.bind.JAXBContext;
@@ -40,7 +41,6 @@ import org.apache.commons.validator.routines.EmailValidator;
 import org.joda.time.Interval;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.support.DataAccessUtils;
 import org.springframework.util.CollectionUtils;
 
@@ -50,6 +50,7 @@ import com.microsoft.exchange.ExchangeResponseUtils;
 import com.microsoft.exchange.ExchangeWebServices;
 import com.microsoft.exchange.exception.ExchangeExceededFindCountLimitRuntimeException;
 import com.microsoft.exchange.exception.ExchangeInvalidUPNRuntimeException;
+import com.microsoft.exchange.exception.ExchangeMissingEmailAddressRuntimeException;
 import com.microsoft.exchange.exception.ExchangeRuntimeException;
 import com.microsoft.exchange.messages.CreateFolder;
 import com.microsoft.exchange.messages.CreateFolderResponse;
@@ -117,26 +118,55 @@ public class BaseExchangeCalendarDataDao {
     // Properties 
     //================================================================================
 	protected final Log log = LogFactory.getLog(this.getClass());
-	
 	private JAXBContext jaxbContext;
 	private ExchangeWebServices webServices;
 	private ExchangeRequestFactory requestFactory = new ExchangeRequestFactory();
 	private ExchangeResponseUtils responseUtils = new ExchangeResponseUtilsImpl();
 	private int maxRetries = 10;
-	
-	@Value("${username}")
+	private static Random random = new Random();
+
+	/**
+	 * This is the principal/username which is used when performing non-user actions like:
+	 *  {@link #getServerTimeZones(String, boolean)}, 
+	 *  {@link #resolveEmailAddresses(String)} and
+	 *  {@link #createEmailMessage(List, String, String, String, BodyTypeType, FolderIdType)}
+	 */
 	private String adminUpn;
-	
-	@Value("${admin.sendas}")
+	/**
+	 * This property is used as the from address when sending mail.
+	 * @see #createEmailMessage(List, String, String, String, BodyTypeType, FolderIdType)
+	 */
 	private String adminSendAs;
 	
     //================================================================================
     // Getters/Setters 
     //================================================================================
+	/**
+	 * See: {@link #adminSendAs}
+	 * @param adminSendAs the from address to use when sending email.
+	 */
+	public void setAdminSendAs(String adminSendAs){
+		this.adminSendAs = adminSendAs;
+	}
+	
+	/**
+	 * See: {@link #adminSendAs}
+	 * @return the from address used when sending email.
+	 */
 	public String getAdminSendAs(){
 		return this.adminSendAs;
 	}
-	
+	/**
+	 * See: {@link #adminUpn}
+	 * @param adminUpn the adminUpn to set
+	 */
+	public void setAdminUpn(String adminUpn){
+		this.adminUpn = adminUpn;
+	}
+	/**
+	 * See: {@link #adminUpn}
+	 * @return the admin user principal name.
+	 */
 	public String getAdminUpn(){
 		return this.adminUpn;
 	}
@@ -153,7 +183,7 @@ public class BaseExchangeCalendarDataDao {
 	/**
 	 * @param exchangeWebServices the exchangeWebServices to set
 	 */
-	@Autowired @Qualifier("ewsClient")
+	@Autowired(required=false) @Qualifier("ewsClient")
 	public void setWebServices(ExchangeWebServices exchangeWebServices) {
 		this.webServices = exchangeWebServices;
 	}
@@ -198,13 +228,19 @@ public class BaseExchangeCalendarDataDao {
 	}
 	
 	/**
-	 * Function for determining how long to sleep before retrying a failed operation
+	 * Function for generating an exponential backoff time. This method will
+	 * never return less than 1000L. This method also adds a small random delay
+	 * in an attempt to prevent threads from backing off/retrying in sync.
+	 * 
 	 * @param retryCount
-	 * @return
+	 *            the number of previously failed attempts.
+	 * @return the number of ms to sleep for.
 	 */
 	public static long getWaitTimeExp(int retryCount) {
-		long waitTime = ((long) Math.pow(2, retryCount) * 100L);
-	    return waitTime;
+		Long baseMultiplier = 1000L;
+		long waitTime = ((long) Math.pow(2, retryCount) * baseMultiplier);
+		long rand =  ((long) random.nextInt(baseMultiplier.intValue())) + 1L;
+	    return waitTime + rand;
 	}
 	
 	/**
@@ -401,10 +437,14 @@ public class BaseExchangeCalendarDataDao {
 	public Map<String, String> getCalendarFolderMap(String upn){
 		Map<String, String> calendarsMap = new HashMap<String, String>();
 		Set<BaseFolderType> allCalendarFolders = getAllCalendarFolders(upn);
+		log.debug("getCalendarFolderMap found "+allCalendarFolders.size());
+		Integer i= 1;
 		for(BaseFolderType folderType: allCalendarFolders) {
 			String name = folderType.getDisplayName();
 			String id = folderType.getFolderId().getId();
+			log.debug("CalendarFolderMap "+upn+" "+i+": "+name);
 			calendarsMap.put(id, name);
+			i++;
 		}
 		return calendarsMap;
 	}
@@ -718,7 +758,7 @@ public class BaseExchangeCalendarDataDao {
 	 * @param depth
 	 * @return {@link ItemIdType}
 	 */
-	private ItemIdType createCalendarItemInternal(String upn, CalendarItemType calendarItem, int depth){
+	private ItemIdType createCalendarItemInternal(String upn, CalendarItemType calendarItem, FolderIdType calendarFolderId, int depth){
 		Validate.notNull(calendarItem, "calendarItem argument cannot be empty");
 		int newDepth = depth +1;
 		if(depth > getMaxRetries()) {
@@ -726,7 +766,7 @@ public class BaseExchangeCalendarDataDao {
 		}else {
 			setContextCredentials(upn);
 			Set<CalendarItemType> singleton = Collections.singleton(calendarItem);
-			CreateItem request = getRequestFactory().constructCreateCalendarItem(singleton);
+			CreateItem request = getRequestFactory().constructCreateCalendarItem(singleton, calendarFolderId);
 			try {
 				CreateItemResponse response = getWebServices().createItem(request);
 				Set<ItemIdType> createdCalendarItems = getResponseUtils().parseCreateItemResponse(response);
@@ -739,7 +779,7 @@ public class BaseExchangeCalendarDataDao {
 				} catch (InterruptedException e1) {
 					log.warn("InterruptedException="+e1);
 				}
-				return createCalendarItemInternal(upn, calendarItem, newDepth);
+				return createCalendarItemInternal(upn, calendarItem, calendarFolderId, newDepth);
 			}
 		}
 		
@@ -752,7 +792,11 @@ public class BaseExchangeCalendarDataDao {
 	 * @return {@link ItemIdType}
 	 */
 	public ItemIdType createCalendarItem(String upn, CalendarItemType calendarItem){
-		return createCalendarItemInternal(upn, calendarItem, 0);
+		return createCalendarItem(upn, calendarItem, null);
+	}
+	
+	public ItemIdType createCalendarItem(String upn, CalendarItemType calendarItem, FolderIdType calendarFolderId){
+		return createCalendarItemInternal(upn, calendarItem, calendarFolderId, 0);
 	}
 	
 	/**
@@ -842,7 +886,7 @@ public class BaseExchangeCalendarDataDao {
 	
 		int newDepth = depth +1;
 		if(depth > getMaxRetries()) {
-			throw new ExchangeRuntimeException("createCalendarItemInternal(upn="+upn+",...) failed "+getMaxRetries()+ " consecutive attempts.");
+			throw new ExchangeRuntimeException("deleteCalendarItemsInternal(upn="+upn+",...) failed "+getMaxRetries()+ " consecutive attempts.");
 		}else {
 			setContextCredentials(upn);
 			DeleteItem request = getRequestFactory().constructDeleteCalendarItems(itemIds);
@@ -888,11 +932,19 @@ public class BaseExchangeCalendarDataDao {
 	 * @return
 	 */
 	public Set<String> resolveEmailAddresses(String alias) {
+		Set<String> smtpAddresses = Collections.emptySet();
 		Validate.isTrue(StringUtils.isNotBlank(alias), "alias argument cannot be blank");
 		setContextCredentials(getAdminUpn());
 		ResolveNames request = getRequestFactory().constructResolveNames(alias);
 		ResolveNamesResponse response = getWebServices().resolveNames(request);
-		return getResponseUtils().parseResolveNamesResponse(response);
+		try{
+			smtpAddresses = getResponseUtils().parseResolveNamesResponse(response);
+		}catch(ExchangeMissingEmailAddressRuntimeException e){
+			request = getRequestFactory().constructResolveNamesWithDistinguishedFolderId(alias);
+			response = getWebServices().resolveNames(request);
+			smtpAddresses = getResponseUtils().parseResolveNamesResponse(response);
+		}
+		return smtpAddresses;
 	}
 	
 	/**
@@ -906,9 +958,8 @@ public class BaseExchangeCalendarDataDao {
 		Validate.isTrue(StringUtils.isNotBlank(emailAddress),"emailAddress argument cannot be blank");
 		Validate.isTrue(EmailValidator.getInstance().isValid(emailAddress),"emailAddress argument must be valid");
 		
-		emailAddress = "smtp:"+emailAddress;
-		
-		Set<String> results = new HashSet<String>();
+		emailAddress = ExchangeRequestFactory.SMTP + emailAddress;
+		Map<BaseFolderType, String> resultMap = new HashMap<BaseFolderType, String>();
 		Set<String> addresses = resolveEmailAddresses(emailAddress);
 		for(String addr: addresses) {
 			try {
@@ -916,19 +967,21 @@ public class BaseExchangeCalendarDataDao {
 				if(null == primaryCalendarFolder) {
 					throw new ExchangeRuntimeException("CALENDAR NOT FOUND");
 				}else {
-					results.add(addr);
+					resultMap.put(primaryCalendarFolder, addr);
 				}
 			}catch(RuntimeException e) {
 				log.debug("resolveUpn -- "+addr+" NOT VALID. "+e.getMessage());
 			}
 		}
-		if(CollectionUtils.isEmpty(results)) {
+		if(CollectionUtils.isEmpty(resultMap)) {
 			throw new ExchangeRuntimeException("resolveUpn("+emailAddress+") failed -- no results.");
 		}else {
-			if(results.size() >1) {
+			if(resultMap.isEmpty()) {
 				throw new ExchangeRuntimeException("resolveUpn("+emailAddress+") failed -- multiple results.");
 			}else {
-				return DataAccessUtils.singleResult(results);
+				//just return the first entry.
+				BaseFolderType key = resultMap.keySet().iterator().next();
+				return resultMap.get(key);
 			}
 		}
 	}	
@@ -1031,9 +1084,7 @@ public class BaseExchangeCalendarDataDao {
 	}
 	
 	public boolean purgeCancelledCalendarItems(String upn, FolderIdType folderId){
-		BaseFolderType primaryCalendarFolder = getPrimaryCalendarFolder(upn);
-		Set<FolderIdType> primaryCalendarFolderId = Collections.singleton(primaryCalendarFolder.getFolderId());
-		FindItem request = getRequestFactory().constructIndexedPageViewFindItemCancelledCalendarItemIds(primaryCalendarFolderId);
+		FindItem request = getRequestFactory().constructIndexedPageViewFindItemCancelledCalendarItemIds(Collections.singleton(folderId));
 		FindItemResponse response = getWebServices().findItem(request);
 		Pair<Set<ItemIdType>, Integer> results = getResponseUtils().parseFindItemIdResponse(response);
 		Set<ItemIdType> itemIds = results.getLeft();
@@ -1041,7 +1092,7 @@ public class BaseExchangeCalendarDataDao {
 		while(itemIds.size() > 0){
 			if(deleteCalendarItems(upn, itemIds)){
 				if(nextOffset > 0){
-					request = getRequestFactory().constructIndexedPageViewFindItemCancelledCalendarItemIds(nextOffset, primaryCalendarFolderId);
+					request = getRequestFactory().constructIndexedPageViewFindItemCancelledCalendarItemIds(nextOffset, Collections.singleton(folderId));
 					response = getWebServices().findItem(request);
 					results = getResponseUtils().parseFindItemIdResponse(response);
 				
