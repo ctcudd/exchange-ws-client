@@ -883,7 +883,7 @@ public class ExchangeRequestFactoryTest extends ExchangeRequestFactoryUtils{
 		assertTrue(request.isReturnFullContactData());
 		
 		assertNotNull(request.getUnresolvedEntry());
-		assertEquals(alias, request.getUnresolvedEntry());
+		assertEquals(ExchangeRequestFactory.SMTP+alias, request.getUnresolvedEntry());
 		
 		assertNull(request.getParentFolderIds());
 	}

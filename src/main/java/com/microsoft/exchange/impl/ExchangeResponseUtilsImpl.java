@@ -29,15 +29,18 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.dao.support.DataAccessUtils;
 import org.springframework.util.CollectionUtils;
 import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
+import com.microsoft.exchange.ExchangeRequestFactory;
 import com.microsoft.exchange.ExchangeResponseUtils;
 import com.microsoft.exchange.exception.ExchangeCannotDeleteRuntimeException;
 import com.microsoft.exchange.exception.ExchangeExceededFindCountLimitRuntimeException;
 import com.microsoft.exchange.exception.ExchangeItemNotFoundRuntimeException;
+import com.microsoft.exchange.exception.ExchangeMissingEmailAddressRuntimeException;
 import com.microsoft.exchange.exception.ExchangeRuntimeException;
 import com.microsoft.exchange.exception.ExchangeTimeoutRuntimeException;
 import com.microsoft.exchange.messages.ArrayOfFreeBusyResponse;
@@ -228,6 +231,9 @@ public class ExchangeResponseUtilsImpl implements ExchangeResponseUtils  {
 					//TODO recover (switch Credentials)
 				}
 				
+				if(ResponseCodeType.ERROR_MISSING_EMAIL_ADDRESS.equals(responseCode)){
+					throw new ExchangeMissingEmailAddressRuntimeException(err);
+				}
 				if(ResponseCodeType.ERROR_TIMEOUT_EXPIRED.equals(responseCode)){
 					throw new ExchangeTimeoutRuntimeException(err);
 				}
@@ -267,6 +273,21 @@ public class ExchangeResponseUtilsImpl implements ExchangeResponseUtils  {
 	 */
 	@Override
 	public  boolean confirmSuccessOrWarning(BaseResponseMessageType response) {
+		Pair<List<String>, List<String>> errorsAndWarnings = getErrorsAndWarnings(response);
+		List<String> errors = errorsAndWarnings.getLeft();
+		List<String> warnings = errorsAndWarnings.getRight();
+		if(CollectionUtils.isEmpty(errors)) {
+			return true;
+		}else {
+			return false;
+		}
+	}
+
+	/**
+	 * @param response
+	 * @return
+	 */
+	private Pair<List<String>, List<String>> getErrorsAndWarnings(BaseResponseMessageType response) {
 		List<String> errors = new ArrayList<String>();
 		List<String> warnings = new ArrayList<String>();
 		
@@ -275,9 +296,7 @@ public class ExchangeResponseUtilsImpl implements ExchangeResponseUtils  {
 		for(JAXBElement<? extends ResponseMessageType> innerResponse : inner){
 			if(innerResponse != null && innerResponse.getValue() != null) {
 				String parsedMsg = parseInnerResponse(innerResponse);
-				
 				ResponseMessageType innerResponseValue = innerResponse.getValue();
-				
 				ResponseClassType responseClass = innerResponseValue.getResponseClass();
 
 				switch (responseClass) {
@@ -296,11 +315,8 @@ public class ExchangeResponseUtilsImpl implements ExchangeResponseUtils  {
 				}
 			}
 		}
-		if(CollectionUtils.isEmpty(errors)) {
-			return true;
-		}else {
-			return false;
-		}
+		Pair<List<String>, List<String>> errorsAndWarnings = Pair.of(errors, warnings);
+		return errorsAndWarnings;
 	}
 
 	
@@ -555,7 +571,10 @@ public class ExchangeResponseUtilsImpl implements ExchangeResponseUtils  {
 	@Override
 	public Set<String> parseResolveNamesResponse(ResolveNamesResponse response) {
 		Set<String> addresses = new HashSet<String>();
-		if(confirmSuccessOrWarning(response)) {
+		Pair<List<String>, List<String>> errorsAndWarnings = getErrorsAndWarnings(response);
+		List<String> errors = errorsAndWarnings.getLeft();
+		
+		if(errors.isEmpty()) {
 			ArrayOfResponseMessagesType arrayOfResponseMessagesType = response.getResponseMessages();
 			List<JAXBElement<? extends ResponseMessageType>> responseMessagesList = arrayOfResponseMessagesType.getCreateItemResponseMessagesAndDeleteItemResponseMessagesAndGetItemResponseMessages();
 			for(JAXBElement<? extends ResponseMessageType> element: responseMessagesList) {
@@ -570,12 +589,15 @@ public class ExchangeResponseUtilsImpl implements ExchangeResponseUtils  {
 						String value = entry.getValue();
 						if(StringUtils.isNotBlank(value)) {
 							value = value.toLowerCase();
-							value = StringUtils.removeStartIgnoreCase(value, "smtp:");
+							value = StringUtils.removeStartIgnoreCase(value, ExchangeRequestFactory.SMTP);
 							addresses.add(value);
 						}
 					}
 				}
 			}
+		}else{
+			//throw runtimeexception
+			confirmSuccess(response);
 		}
 		return addresses;
 	}
