@@ -23,6 +23,7 @@
 package com.microsoft.exchange.impl.http;
 
 import java.net.URI;
+import java.util.Collections;
 
 import org.apache.http.auth.AuthScheme;
 import org.apache.http.auth.AuthScope;
@@ -31,9 +32,10 @@ import org.apache.http.client.protocol.ClientContext;
 import org.apache.http.conn.ClientConnectionManager;
 import org.apache.http.impl.auth.BasicScheme;
 import org.apache.http.impl.auth.DigestScheme;
+import org.apache.http.impl.auth.NTLMSchemeFactory;
+import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.conn.PoolingClientConnectionManager;
 import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
-import org.apache.http.pool.ConnPoolControl;
 import org.apache.http.protocol.BasicHttpContext;
 import org.apache.http.protocol.HttpContext;
 import org.springframework.ws.transport.http.HttpComponentsMessageSender;
@@ -46,6 +48,8 @@ import com.microsoft.exchange.impl.ExchangeOnlineThrottlingPolicy;
 public class CustomHttpComponentsMessageSender extends
 		HttpComponentsMessageSender {
 
+	private static final String HTTP_AUTH_TARGET_SCHEME_PREF = "http.auth.target-scheme-pref";
+	private NTLMSchemeFactory ntlmSchemeFactory = new  NTLMSchemeFactory();
 	private boolean preemptiveAuthEnabled = false;
 	private boolean ntlmAuthEnabled = false;
 	private AuthScope preemptiveAuthScope = AuthScope.ANY;
@@ -108,9 +112,20 @@ public class CustomHttpComponentsMessageSender extends
 	@Override
 	public void afterPropertiesSet() throws Exception {
 		super.afterPropertiesSet();
+		DefaultHttpClient httpClient = (DefaultHttpClient) getHttpClient();
 		if(isPreemptiveAuthEnabled()) {
-			this.preemptiveAuthScheme = identifyScheme(getPreemptiveAuthScope().getScheme());
+			if(isNtlmAuthEnabled()){
+				this.preemptiveAuthScheme = ntlmSchemeFactory.newInstance(httpClient.getParams());
+			}else{
+				this.preemptiveAuthScheme = identifyScheme(getPreemptiveAuthScope().getScheme());
+			}
+			httpClient.addRequestInterceptor(new PreemptiveAuthInterceptor());
 		}
+		if(isNtlmAuthEnabled()){
+			//avoids: "WARN [main] org.apache.http.client.protocol.RequestTargetAuthentication - NEGOTIATE authentication error: Invalid name provided (Mechanism level: Cannot locate default realm)"
+			httpClient.getParams().setParameter(HTTP_AUTH_TARGET_SCHEME_PREF, Collections.singletonList("NTLM"));
+		}
+		
 		boolean overrideSuccess = false;
 		if(defaultMaxPerRouteOverride != null) {
 			overrideSuccess = this.overrideDefaultMaxPerRoute(defaultMaxPerRouteOverride);

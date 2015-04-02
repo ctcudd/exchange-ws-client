@@ -16,12 +16,28 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package com.microsoft.exchange.impl.http;
+/**
+ * 
+ */
+package com.microsoft.exchange.ical.model;
 
-public class ExchangeMessageSender {
+import net.fortuna.ical4j.model.parameter.XParameter;
 
-	public ExchangeMessageSender() {
-		// TODO Auto-generated constructor stub
+import com.microsoft.exchange.types.EmailAddressType;
+
+/**
+ * {@link XParameter} intended to hold the value from {@link EmailAddressType}.getRoutingType()
+ * 
+ * @author ctcudd
+ *
+ */
+public class EmailAddressRoutingTypeParamater extends XParameter {
+
+	private static final long serialVersionUID = 6772316318466614629L;
+	public static final String EMAIL_ADDRESS_ROUTING_TYPE = "X-EWS-EMAIL-ADDRESS-ROUTING-TYPE";
+	
+	public EmailAddressRoutingTypeParamater(String routingType) {
+		super(EMAIL_ADDRESS_ROUTING_TYPE, routingType);
 	}
 
 }

@@ -58,5 +58,4 @@ public class ICU4J_Test {
 		log.info(validZonesCount +"/"+availableIDs.length +" system time zone ids can be mapped to a windows time zone id");
 	}
 
-	
 }

@@ -18,25 +18,24 @@
  */
 package com.microsoft.exchange.ical.model;
 
-import com.microsoft.exchange.types.MailboxTypeType;
+import net.fortuna.ical4j.model.property.XProperty;
 
-import net.fortuna.ical4j.model.parameter.XParameter;
+import com.microsoft.exchange.types.ItemIdType;
 /**
- * XParameter indented to take the value of a {@link MailboxTypeType}
  * 
  * @author ctcudd
  *
  */
-public class EmailAddressMailboxType extends XParameter {
+public class ItemTypeItemIdProperty extends XProperty{
 
 	/**
 	 * 
 	 */
-	private static final long serialVersionUID = 5365130984683399890L;
-	private static final String EMAIL_ADDRESS_MAILBOX_TYPE = "X-EWS-EMAIL-ADDRESS-MAILBOX-TYPE";
-	
-	public EmailAddressMailboxType(MailboxTypeType mailboxTypeType) {
-		super(EMAIL_ADDRESS_MAILBOX_TYPE, mailboxTypeType.value());
+	private static final long serialVersionUID = 7840657473114832271L;
+	public static final String X_EWS_ITEM_ID ="X-EWS-ITEMID";
+
+	public ItemTypeItemIdProperty(ItemIdType itemIdType) {
+		super(X_EWS_ITEM_ID, itemIdType.getId());
 	}
 
 }

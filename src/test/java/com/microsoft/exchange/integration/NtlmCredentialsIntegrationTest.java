@@ -17,11 +17,10 @@
  * under the License.
  */
 package com.microsoft.exchange.integration;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertNotNull;
 
 import org.apache.http.auth.Credentials;
 import org.apache.http.auth.NTCredentials;
-import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Value;
@@ -29,8 +28,6 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import com.microsoft.exchange.impl.http.ThreadLocalCredentialsProviderFactory;
-import com.microsoft.exchange.messages.FindFolder;
-import com.microsoft.exchange.messages.FindFolderResponse;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations="classpath:/com/microsoft/exchange/exchangeContext-usingNtlmCredentials.xml")

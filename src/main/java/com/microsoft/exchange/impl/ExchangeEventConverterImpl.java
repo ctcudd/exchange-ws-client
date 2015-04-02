@@ -69,19 +69,19 @@ import org.springframework.util.CollectionUtils;
 
 import com.microsoft.exchange.ExchangeEventConverter;
 import com.microsoft.exchange.exception.ExchangeEventConverterException;
-import com.microsoft.exchange.ical.model.EmailAddressMailboxType;
-import com.microsoft.exchange.ical.model.EmailAddressRoutingType;
+import com.microsoft.exchange.ical.model.EmailAddressMailboxTypeParamater;
+import com.microsoft.exchange.ical.model.EmailAddressRoutingTypeParamater;
 import com.microsoft.exchange.ical.model.ExchangeEndTimeZoneProperty;
 import com.microsoft.exchange.ical.model.ExchangeStartTimeZoneProperty;
 import com.microsoft.exchange.ical.model.ExchangeTimeZoneProperty;
-import com.microsoft.exchange.ical.model.ItemTypeChangeKey;
-import com.microsoft.exchange.ical.model.ItemTypeItemId;
-import com.microsoft.exchange.ical.model.ItemTypeParentFolderChangeKey;
-import com.microsoft.exchange.ical.model.ItemTypeParentFolderId;
-import com.microsoft.exchange.ical.model.PathToExtendedFieldTypePropertyId;
-import com.microsoft.exchange.ical.model.PathToExtendedFieldTypePropertySetId;
-import com.microsoft.exchange.ical.model.PathToExtendedFieldTypePropertyTag;
-import com.microsoft.exchange.ical.model.PathToExtendedFieldTypePropertyType;
+import com.microsoft.exchange.ical.model.ItemTypeChangeKeyProperty;
+import com.microsoft.exchange.ical.model.ItemTypeItemIdProperty;
+import com.microsoft.exchange.ical.model.ItemTypeParentFolderChangeKeyProperty;
+import com.microsoft.exchange.ical.model.ItemTypeParentFolderIdProperty;
+import com.microsoft.exchange.ical.model.PathToExtendedFieldTypePropertyIdParamater;
+import com.microsoft.exchange.ical.model.PathToExtendedFieldTypePropertySetIdParamater;
+import com.microsoft.exchange.ical.model.PathToExtendedFieldTypePropertyTagParamater;
+import com.microsoft.exchange.ical.model.PathToExtendedFieldTypePropertyTypeParamater;
 import com.microsoft.exchange.types.ArrayOfStringsType;
 import com.microsoft.exchange.types.AttendeeType;
 import com.microsoft.exchange.types.CalendarItemType;
@@ -111,7 +111,7 @@ public class ExchangeEventConverterImpl implements ExchangeEventConverter {
 
 	
 	@Override
-	public Calendar convertToCalendar(Collection<ItemType> items, String upn) {
+	public Calendar convertToCalendar(Collection<? extends ItemType> items, String upn) {
 		Calendar result = new Calendar();
 		
 		result.getProperties().add(PROD_ID);
@@ -392,7 +392,7 @@ public class ExchangeEventConverterImpl implements ExchangeEventConverter {
 	 * Return a never null but possibly empty {@link Collection} of {@link XProperty}
 	 * 
 	 * Returned {@link XProperty}s may include:
-	 * {@link ItemTypeParentFolderId}, 
+	 * {@link ItemTypeParentFolderIdProperty}, 
 	 * 
 	 * @param item
 	 * @return
@@ -405,12 +405,12 @@ public class ExchangeEventConverterImpl implements ExchangeEventConverter {
 			String p_id = parentFolderId.getId();
 			String p_ck = parentFolderId.getChangeKey();
 			if(StringUtils.isNotBlank(p_id)){
-				xprops.add(new ItemTypeParentFolderId(parentFolderId));
+				xprops.add(new ItemTypeParentFolderIdProperty(parentFolderId));
 			}else{
 				log.warn("unable to generate X_EWS_PARENT_FOLDER_ID, parentFolderId is blank");
 			}
 			if(StringUtils.isNotBlank(p_ck)){
-				xprops.add(new ItemTypeParentFolderChangeKey(parentFolderId));
+				xprops.add(new ItemTypeParentFolderChangeKeyProperty(parentFolderId));
 			}else{
 				log.warn("unable to generate X_EWS_PARENT_FOLDER_CHANGEKEY, parentFolderChangeKey is blank");
 			}
@@ -421,12 +421,12 @@ public class ExchangeEventConverterImpl implements ExchangeEventConverter {
 			String i_id = itemId.getId();
 			String i_ck = itemId.getChangeKey();
 			if(StringUtils.isNotBlank(i_id)){
-				xprops.add(new ItemTypeItemId(itemId));
+				xprops.add(new ItemTypeItemIdProperty(itemId));
 			}else{
 				log.warn("unable to generate X_EWS_ITEM_ID, itemId is blank");
 			}
 			if(StringUtils.isNotBlank(i_ck)){
-				xprops.add(new ItemTypeChangeKey(itemId));
+				xprops.add(new ItemTypeChangeKeyProperty(itemId));
 			}else{
 				log.warn("unable to generate X_EWS_ITEM_CHANGEKEY, itemChangeKey is blank");
 			}
@@ -466,19 +466,19 @@ public class ExchangeEventConverterImpl implements ExchangeEventConverter {
 			ParameterList params = new ParameterList();
 			String exPropSetId = extendedFieldURI.getPropertySetId();
 			if(StringUtils.isNotBlank(exPropSetId)){
-				params.add(new PathToExtendedFieldTypePropertySetId(extendedFieldURI));
+				params.add(new PathToExtendedFieldTypePropertySetIdParamater(extendedFieldURI));
 			}
 			Integer exPropId = extendedFieldURI.getPropertyId();
 			if(StringUtils.isNotBlank(exPropId.toString())){
-				params.add(new PathToExtendedFieldTypePropertyId(extendedFieldURI));
+				params.add(new PathToExtendedFieldTypePropertyIdParamater(extendedFieldURI));
 			}
 			MapiPropertyTypeType propertyType = extendedFieldURI.getPropertyType();
 			if(null != propertyType && StringUtils.isNotBlank(propertyType.value())){
-				params.add(new PathToExtendedFieldTypePropertyType(extendedFieldURI));
+				params.add(new PathToExtendedFieldTypePropertyTypeParamater(extendedFieldURI));
 			}
 			String propertyTag = extendedFieldURI.getPropertyTag();
 			if(StringUtils.isNotBlank(propertyTag)){
-				params.add(new PathToExtendedFieldTypePropertyTag(extendedFieldURI));
+				params.add(new PathToExtendedFieldTypePropertyTagParamater(extendedFieldURI));
 			}
 			Set<String> xPropertyValues = new HashSet<String>();
 			if(StringUtils.isNotBlank(propertyName)){
@@ -535,7 +535,7 @@ public class ExchangeEventConverterImpl implements ExchangeEventConverter {
 	 * This method will return a never null but possibly empty {@link ParameterList}.  
 	 * 
 	 * ParamaterList may contain the following {@link Parameter}s: 
-	 * {@link Cn}, {@link EmailAddressRoutingType}, {@link EmailAddressMailboxType}
+	 * {@link Cn}, {@link EmailAddressRoutingTypeParamater}, {@link EmailAddressMailboxTypeParamater}
 	 * 
 	 * @param recipient
 	 * @return
@@ -563,13 +563,13 @@ public class ExchangeEventConverterImpl implements ExchangeEventConverter {
 			}
 			String routingType = emailAddressType.getRoutingType();
 			if(StringUtils.isNotBlank(routingType)){
-				params.add(new EmailAddressRoutingType(routingType));
+				params.add(new EmailAddressRoutingTypeParamater(routingType));
 			}else{
 				log.debug("convertEmailAddressType: could not generate EmailAddressRoutingType");
 			}
 			MailboxTypeType mailboxType = emailAddressType.getMailboxType();
 			if(null != mailboxType){
-				params.add(new EmailAddressMailboxType(mailboxType));
+				params.add(new EmailAddressMailboxTypeParamater(mailboxType));
 				CuType cuType = convertMailboxTypeTypeToCuType(mailboxType,role);
 				params.add(cuType);
 			}else{
@@ -840,8 +840,10 @@ public class ExchangeEventConverterImpl implements ExchangeEventConverter {
 			}
 			
 			//TODO this is bad hack
-			if(Role.NON_PARTICIPANT.equals(role)){
-				cuType = CuType.RESOURCE;
+			if(null != role){
+				if(Role.NON_PARTICIPANT.equals(role)){
+					cuType = CuType.RESOURCE;
+				}
 			}
 		}
 		return cuType;

@@ -18,9 +18,14 @@
  */
 package com.microsoft.exchange.integration;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
-import java.util.GregorianCalendar;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Set;
 
 import javax.xml.datatype.DatatypeConfigurationException;
@@ -34,7 +39,7 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.dao.support.DataAccessUtils;
 
 import com.ibm.icu.util.TimeZone;
-import com.microsoft.exchange.DateHelp;
+import com.microsoft.exchange.ExchangeDateUtils;
 import com.microsoft.exchange.ExchangeWebServices;
 import com.microsoft.exchange.exception.ExchangeWebServicesRuntimeException;
 import com.microsoft.exchange.impl.BaseExchangeCalendarDataDao;
@@ -42,7 +47,6 @@ import com.microsoft.exchange.impl.RequestServerTimeZoneInterceptor;
 import com.microsoft.exchange.types.CalendarItemType;
 import com.microsoft.exchange.types.ItemIdType;
 
-import edu.emory.mathcs.backport.java.util.Collections;
 
 public class TimeZoneIntegrationTest {
 	
@@ -83,7 +87,7 @@ public class TimeZoneIntegrationTest {
 		assertEquals(RequestServerTimeZoneInterceptor.FALLBACK_TIMEZONE_ID, timeZoneInterceptor.getWindowsTimeZoneID());
 		
 		//time zone currently set to utc, create a date using default time zone
-		XMLGregorianCalendar now = DateHelp.getXMLGregorianCalendarNow();
+		XMLGregorianCalendar now = ExchangeDateUtils.getXMLGregorianCalendarNow();
 		
 		//change the default time zone, so the RequestServerTimeZoneInterceptor is out of sync with default time zone.
 		TimeZone.setDefault(badTimeZone);
@@ -118,7 +122,7 @@ public class TimeZoneIntegrationTest {
 		assertEquals(TimeZone.getDefault(), utcTimeZone);
 		
 		//XMLGregorianCalendar is sortof backed by a gregorian calendar, date/times should reflect default jvm timezone
-		XMLGregorianCalendar xmlStart = DateHelp.getXMLGregorianCalendarNow();
+		XMLGregorianCalendar xmlStart = ExchangeDateUtils.getXMLGregorianCalendarNow();
 		
 		CalendarItemType calendarItem = new CalendarItemType();
 		calendarItem.setStart(xmlStart);
@@ -126,7 +130,7 @@ public class TimeZoneIntegrationTest {
 		ItemIdType itemId = exchangeCalendarDao.createCalendarItem(upn, calendarItem);
 		assertNotNull(itemId);
 		Set<ItemIdType> itemIds = Collections.singleton(itemId);
-		Set<CalendarItemType> calendarItems = exchangeCalendarDao.getCalendarItems(upn, itemIds);
+		Collection<CalendarItemType> calendarItems = exchangeCalendarDao.getCalendarItems(upn, itemIds);
 		assertNotNull(calendarItems);
 		CalendarItemType createdCalendarItem = DataAccessUtils.singleResult(calendarItems);
 		assertNotNull(createdCalendarItem);
@@ -152,7 +156,7 @@ public class TimeZoneIntegrationTest {
 		//assertEquals(xmlStart.getMillisecond(), createdCalendarItemStart.getMillisecond());	
 		//assertEquals(xmlStart.getFractionalSecond(), createdCalendarItemStart.getFractionalSecond());
 		
-		assertTrue(DateHelp.withinOneSecond(xmlStart, createdCalendarItemStart));
+		assertTrue(ExchangeDateUtils.withinOneSecond(xmlStart, createdCalendarItemStart));
 		
 		assertTrue(exchangeCalendarDao.deleteCalendarItems(upn, itemIds));
 	}
@@ -168,7 +172,7 @@ public class TimeZoneIntegrationTest {
 		
 		
 		//XMLGregorianCalendar is sortof backed by a gregorian calendar, date/times should reflect default jvm timezone
-		XMLGregorianCalendar xmlStart = DateHelp.getXMLGregorianCalendarNow(java.util.TimeZone.getTimeZone("Pacific/Palau"));
+		XMLGregorianCalendar xmlStart = ExchangeDateUtils.getXMLGregorianCalendarNow(java.util.TimeZone.getTimeZone("Pacific/Palau"));
 		
 		CalendarItemType calendarItem = new CalendarItemType();
 		calendarItem.setStart(xmlStart);
@@ -176,7 +180,7 @@ public class TimeZoneIntegrationTest {
 		ItemIdType itemId = exchangeCalendarDao.createCalendarItem(upn, calendarItem);
 		assertNotNull(itemId);
 		Set<ItemIdType> itemIds = Collections.singleton(itemId);
-		Set<CalendarItemType> calendarItems = exchangeCalendarDao.getCalendarItems(upn, itemIds);
+		Collection<CalendarItemType> calendarItems = exchangeCalendarDao.getCalendarItems(upn, itemIds);
 		assertNotNull(calendarItems);
 		CalendarItemType createdCalendarItem = DataAccessUtils.singleResult(calendarItems);
 		assertNotNull(createdCalendarItem);
@@ -187,7 +191,7 @@ public class TimeZoneIntegrationTest {
 		//because the XMLGregorian calnedar was created with a time zone other than system default
 		assertFalse(xmlStart.getTimezone() == createdCalendarItemStart.getTimezone());
 		
-		assertTrue(DateHelp.withinOneSecond(xmlStart, createdCalendarItemStart));
+		assertTrue(ExchangeDateUtils.withinOneSecond(xmlStart, createdCalendarItemStart));
 		
 		assertTrue(exchangeCalendarDao.deleteCalendarItems(upn, itemIds));
 	}

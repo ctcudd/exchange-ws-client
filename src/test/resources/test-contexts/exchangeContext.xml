@@ -6,6 +6,8 @@
 						http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.0.xsd">
 
 <import resource="classpath:/com/microsoft/exchange/exchangeContext-usingImpersonation.xml"/>
+<!-- <import resource="classpath:/com/microsoft/exchange/exchangeContext-usingNtlmCredentials.xml"/> -->
+<!-- <import resource="classpath:/com/microsoft/exchange/exchangeContext-ntlm-impersonation.xml"/> -->
 
 <bean id="exchangeCalendarDataDao"	class="com.microsoft.exchange.impl.BaseExchangeCalendarDataDao" />			
 

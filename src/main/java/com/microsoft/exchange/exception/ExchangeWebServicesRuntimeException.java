@@ -27,18 +27,12 @@ package com.microsoft.exchange.exception;
  * 
  * @author Nicholas Blair
  */
-public class ExchangeWebServicesRuntimeException extends RuntimeException {
+public class ExchangeWebServicesRuntimeException extends ExchangeRuntimeException {
 
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = 202143418251140727L;
-
-	/**
-	 * 
-	 */
-	public ExchangeWebServicesRuntimeException() {
-	}
 
 	/**
 	 * @param message
@@ -54,12 +48,7 @@ public class ExchangeWebServicesRuntimeException extends RuntimeException {
 		super(cause);
 	}
 
-	/**
-	 * @param message
-	 * @param cause
-	 */
-	public ExchangeWebServicesRuntimeException(String message, Throwable cause) {
-		super(message, cause);
+	public ExchangeWebServicesRuntimeException(String arg0, Throwable arg1){
+		super(arg0, arg1);
 	}
-
 }

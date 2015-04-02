@@ -23,20 +23,19 @@ package com.microsoft.exchange.ical.model;
 
 import net.fortuna.ical4j.model.property.XProperty;
 
+import com.microsoft.exchange.types.CalendarItemType;
+
 /**
+ * {@link XProperty} intended to store the value from {@link CalendarItemType#getEndTimeZone()}.getId()
+ * 
  * @author ctcudd
  *
  */
 public class ExchangeEndTimeZoneProperty extends XProperty {
 
-	/**
-	 * 
-	 */
 	private static final long serialVersionUID = 5723883378729283373L;
-	private static final String X_EWS_END_TIMEZONE ="X-EWS-END-TIMEZONE";
-	
+	public static final String X_EWS_END_TIMEZONE ="X-EWS-END-TIMEZONE";
 	public ExchangeEndTimeZoneProperty(String endTimeZoneId) {
 		super(X_EWS_END_TIMEZONE, endTimeZoneId);
 	}
-
 }

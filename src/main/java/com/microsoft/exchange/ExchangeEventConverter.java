@@ -29,6 +29,7 @@ import net.fortuna.ical4j.model.property.Version;
 
 import com.microsoft.exchange.types.CalendarItemType;
 import com.microsoft.exchange.types.ItemType;
+import com.microsoft.exchange.types.TaskType;
 import com.microsoft.exchange.types.TimeZoneDefinitionType;
 
 public interface ExchangeEventConverter {
@@ -60,6 +61,6 @@ public interface ExchangeEventConverter {
 	 * @param upn
 	 * @return
 	 */
-	Calendar convertToCalendar(Collection<ItemType> items, String upn);
+	Calendar convertToCalendar(Collection<? extends ItemType> items, String upn);
 	
 }
